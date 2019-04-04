@@ -1,0 +1,5 @@
+#!/bin/bash
+rm thiseX 
+#test.out
+gfortran activation.F90 -o thiseX
+./thiseX > stdout

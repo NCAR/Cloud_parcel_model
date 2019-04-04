@@ -37,13 +37,15 @@
 
       time_prep=10.d0
       delt= 1.d-04
-      ntot=200./delt
-      OPEN(UNIT=16,FILE='test.out',ACCESS='APPEND')
-      OPEN(UNIT=50,FILE='test.dsd',ACCESS='APPEND')
-      OPEN(UNIT=51,FILE='test.rad',ACCESS='APPEND')
+      ntot=10./delt
+      !setup output files
+      OPEN(UNIT=16,FILE='new.out',ACCESS='APPEND')!parcel mean variables
+      OPEN(UNIT=50,FILE='new.dsd',ACCESS='APPEND')!number concentration of each bin
+      OPEN(UNIT=51,FILE='new.rad',ACCESS='APPEND')!droplet size of each bin
+      OPEN(UNIT=60,FILE='new.test',ACCESS='APPEND')!output the tested variables
 !--------------initialize aerosols---------
       disp = 30
-      GCCN = 3 !=1 insert Giant CCN =2 monotonic seeding r=1micron
+      GCCN = 4 !=1 insert Giant CCN =2 monotonic seeding r=1micron;!=3 add 3 mode lognormal seeding distribution by Cooper et al. 1997
       !disp=35 urban, 30 marine, 31 JN17 polluted, 32 NJ17 pristine
       nbins = 100
       allocate (dsd(nbins),rad(nbins),rad1(nbins),mass(nbins),dr3(nbins),rad_wet(nbins))
@@ -54,8 +56,8 @@
 !      ndrop=2.d2 !cm^-3
       call iaerosol(disp,rad,mass,dsd,nbins,ndrop,iinit,ifinal,rm,nbinsout,GCCN)
       print*,'nbinsout,GCCN',nbinsout,GCCN
-      write(50,145) 0.-time_prep,(dsd(i), i=1,nbinsout)
-      write(51,145) 0.-time_prep,(rad(i), i=1,nbinsout)
+      write(50,145) 0.,(dsd(i), i=1,nbinsout)
+      write(51,145) 0.,(rad(i), i=1,nbinsout)
       print*,'ndrop',ndrop,sum(dsd(1:nbinsout)),'disp',disp
 !-------------initialize variables------------
       rad1=rad
@@ -65,7 +67,7 @@
       temp=284.3d0!281.5d0!284.3!293.15
       p1=93850.0d0!90650.d0!93850.0!95000.0
       p0=1.d5
-      sp =  -14.39d-2!0.d0!-14.39d-2
+      sp = -10.d-2! -14.39d-2!0.d0!-14.39d-2
       pp=p1
       sumrp=0.d0!mark new cdp sumrp=sum(r**2*dr)
       racp= ra/cp
@@ -254,7 +256,7 @@
   real(8) :: r1,n1,logsig,rmin,rmax,rho_ccn
   real(8) :: logrmin,logrmax,rad_power,bin_factor
   real,parameter :: pi=3.14159265
-
+ 145   format(1x,100(e16.8,2x))
  111 format(a20,i3)
 
 ! Set everything to zero.
@@ -276,12 +278,14 @@ rho_ccn=1726 !kg/m**3 for Ammonium sulfate
      rad(1)=rmin
      mass(1)=4.d0/3.d0*pi*rmin**3*rho_ccn 
      bin_factor=2.d0
-     wid(1)=rad(1)*(bin_factor**(1.d0/3.d0)-1)
+     wid(1)=rad(1)*(bin_factor**(1.d0/3.d0)-1.d0)
      do i=2,nbinsout
         mass(i)=mass(1)*bin_factor**i
         rad_power=real(i)/3.d0
         rad(i)=rad(1)*bin_factor**rad_power
         wid(i)=rad(i)-rad(i-1)
+     enddo
+     do i=1,nbinsout
         n1=133.d0
         r1=0.0039d-6
         logsig=.657d0
@@ -547,18 +551,17 @@ rho_ccn=1726 !kg/m**3 for Ammonium sulfate
         nrad(nbinsout+41)=.0d0
         nrad(nbinsout+42)=.4542d-5!9micron
         nbinsout=nbinsout+42
-        ndrop=sum(nrad(1:nbinsout))
   elseif (GCCN==2) then
         rad(nbinsout+1)=1.d-6
 	mass=4.d0/3.d0*pi*rad(nbinsout+1)**3*rho_ccn
         nrad(nbinsout+1)=10
         nbinsout=nbinsout+1
-	ndrop=sum(nrad(1:nbinsout))
   endif!GCCN
+  ndrop=sum(nrad(1:nbinsout))
+  write(60,145) 0.,(dNdlogr(i), i=1,nbinsout)
+  rm = (sum(rad(1:nbinsout)**3*nrad(1:nbinsout))/ndrop)**(1.d0/3.d0)
 
-     rm = (sum(rad(1:nbinsout)**3*nrad(1:nbinsout))/ndrop)**(1.d0/3.d0)
-
-     print*,"rm", rm,ndrop,10.d0**(floor(log10(rad(7))))
+  print*,"rm", rm,ndrop,10.d0**(floor(log10(rad(7))))
 deallocate(wid,dNdlogr,dNdr)
 
  299   format(1x,(e12.6),3(f8.6))
