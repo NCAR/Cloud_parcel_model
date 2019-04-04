@@ -30,14 +30,15 @@
       real,parameter :: m_s=132.14d-3!molecular weight of solute; ammonium sulfate=132.14d-3; NaCl = 58.44d-3
       real,parameter :: rhow=1000.0
       real,parameter :: eps=ra/rv
+      real,parameter :: vh=3. !van hoff factor
       real,parameter :: latovercp=lat/cp
       real,parameter :: rho_ccn = 1726.d0 !kg/m**3 for ammonium sulfate =1726.d0 for NaCl=2160.d0
 196   format(1x,6(f16.8,2x))
 145   format(1x,100(e16.8,2x))
 
-      time_prep=10.d0
+      time_prep=1.d0
       delt= 1.d-04
-      ntot=10./delt
+      ntot=200./delt
       !setup output files
       OPEN(UNIT=16,FILE='new.out',ACCESS='APPEND')!parcel mean variables
       OPEN(UNIT=50,FILE='new.dsd',ACCESS='APPEND')!number concentration of each bin
@@ -45,8 +46,8 @@
       OPEN(UNIT=60,FILE='new.test',ACCESS='APPEND')!output the tested variables
 !--------------initialize aerosols---------
       disp = 30
-      GCCN = 4 !=1 insert Giant CCN =2 monotonic seeding r=1micron;!=3 add 3 mode lognormal seeding distribution by Cooper et al. 1997
-      !disp=35 urban, 30 marine, 31 JN17 polluted, 32 NJ17 pristine
+      GCCN = 0 !=1 insert Giant CCN =2 monotonic seeding r=1micron;!=3 add 3 mode lognormal seeding distribution by Cooper et al. 1997
+      !disp=35 Xue10 urban, 30 Xue10 marine, 31 JN17 polluted, 32 NJ17 pristine
       nbins = 100
       allocate (dsd(nbins),rad(nbins),rad1(nbins),mass(nbins),dr3(nbins),rad_wet(nbins))
       rm =0.d0!1.d-5
@@ -67,7 +68,7 @@
       temp=284.3d0!281.5d0!284.3!293.15
       p1=93850.0d0!90650.d0!93850.0!95000.0
       p0=1.d5
-      sp = -10.d-2! -14.39d-2!0.d0!-14.39d-2
+      sp = -14.39d-2!0.d0!-14.39d-2
       pp=p1
       sumrp=0.d0!mark new cdp sumrp=sum(r**2*dr)
       racp= ra/cp
@@ -77,11 +78,9 @@
       esat = 2.53d11*exp(-5.42d3/temp)
 !      ks=1.0/(lat**2*eps*rhow/(Ka*Ra*Temp**2)+Ra*Temp*rhow/(eps*diffvnd*esat))
       ks = 1.d0/(rhow*Rv*temp/(esat*diffvnd)+rhow*Lat/(Ka*Temp)*(Lat/(Rv*Temp)-1))
-!print*,'ks',ks
       qvs = eps*esat/(PP-esat)
       qvpp= (sp+1.d0)*qvs !kg/m^3
       rhoa=pp/(Ra*(1+18.d0/29.d0*qvpp)*temp)
-!      rhoa=pp/(ra*temp)
       rhoa0=rhoa
       write(16,*) 0.d0-time_prep,up*delt*ntmic,Sp,cd,rad(5),rad(15),rad(40),pp,temp,281.5-grav/cp*delt*up,& !8
                 thetapp,qvpp,qvs,rm,rhoa,LATOVERCP*DELTAQP/EXNER,deltaqp
@@ -101,19 +100,17 @@
          ka2=ka1*1.d0/(rad_wet(i)/(rad_wet(i)+.216d-6)+ka1/(rad_wet(i)*.7*rhoa*cp)*sqrt(2.d0*pi/(Ra*temp)))
          ks = 1.d0/(rhow*Rv*temp/(esat*diffvnd2)+rhow*Lat/(Ka2*Temp)*(Lat/(Rv*Temp)-1))
          curv=2.d0*7.61d-2/(Rv*rhow*temp*rad_wet(i))  
-         solu=2.d0*m_w/m_s*rho_ccn*rad1(i)**3/rhow!4.3d0*2.d0*mass(i)/132.14d0*1.d-6 !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
+         solu=vh*m_w/m_s*rho_ccn*rad1(i)**3/rhow!4.3d0*2.d0*mass(i)/132.14d0*1.d-6 !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
          seq=exp(curv-solu/(rad_wet(i)**3-rad1(i)**3))-1.d0
          if(seq .gt. sp) then
 	   rad_wet(i)=rad_wet(i)-rad1(i)*1.d-6
 	 elseif(seq .lt. sp) then 
 	   rad_wet(i)=rad_wet(i)+rad1(i)*1.d-6
 	 endif
-!	 print*,'seq-sp',seq-sp
       enddo
       enddo
       rad=rad_wet
-!      write(51,145) 0.-time_prep,(rad(i), i=1,nbinsout)
-!--------------first -10~0 second for spinup------------------
+!--------------spin-up------------------
       upp=0.d0
       do 200 ntmic=1,int(time_prep/delt*2.d0)
          time = ntmic*delt/2.d0-time_prep
@@ -135,7 +132,7 @@
           ka1=1.5d-11*temp**3-4.8d-8*temp**2+1.d-4*temp-3.9d-4
           do i = 1,nbinsout
              curv=2.d0*7.61d-2/(Rv*rhow*temp*rad(i)) !curvature effect coefficient !in m
-             solu=2.d0*m_w/m_s*rho_ccn*rad1(i)**3/rhow!4.3d0*2.d0*mass(i)/132.14d0*1.d-6 !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
+             solu=vh*m_w/m_s*rho_ccn*rad1(i)**3/rhow!4.3d0*2.d0*mass(i)/132.14d0*1.d-6 !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
              diffvnd2=diffvnd1*1.d0/(rad(i)/(rad(i)+0.104d-6)+diffvnd1/(rad(i)*0.036)*sqrt(2.d0*pi/(Ra*temp)))
              ka2=ka1*1.d0/(rad(i)/(rad(i)+.216d-6)+ka1/(rad(i)*.7*rhoa*cp)*sqrt(2.d0*pi/(Ra*temp)))
              ks =1.d0/(rhow*Rv*temp/(esat*diffvnd2)+rhow*Lat/(Ka2*Temp)*(Lat/(Rv*Temp)-1))
@@ -152,7 +149,7 @@
           enddo
           rm=(sum(rad(1:nbinsout)**3*dsd(1:nbinsout))/ndrop)**(1.d0/3.0d0)
           if(mod(ntmic,int(time_prep/delt*2.d0)/1000) .eq. 0 .or. int(time_prep/delt*2.d0) .le. 1000) then
-             write(16,*) time-time_prep,0,Sp,cd,rad(5),rad(15),rad(40),pp,temp,281.5-grav/cp*delt*up*ntmic,&
+             write(16,*) time,0,Sp,cd,rad(5),rad(15),rad(40),pp,temp,281.5-grav/cp*delt*up*ntmic,&
                thetapp,qvpp,qvs,rm,rhoa,LATOVERCP*DELTAQP/EXNER,deltaqp
              write(50,145) time,(dsd(i), i=1,nbinsout)
              write(51,145) time,(rad(i), i=1,nbinsout)
@@ -184,34 +181,17 @@
           diffvnd1=1.d-5*(0.015*Temp-1.9)
           ka1=1.5d-11*temp**3-4.8d-8*temp**2+1.d-4*temp-3.9d-4
           do i = 1,nbinsout
-!	solu=0.d0
-!	curv=0.d0
 !             curv=3.3d-7/(temp*rad(i))!
              curv=2.d0*7.61d-2/(Rv*rhow*temp*rad(i)) !curvature effect coefficient !in m
-!	     solu=4.3d0*2.d0*mass(i)/m_s*1.d-6 !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
-             solu=2.d0*m_w/m_s*rho_ccn*rad1(i)**3/rhow!4.3d0*2.d0*mass(i)/132.14d0*1.d-6 !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
+             solu=vh*m_w/m_s*rho_ccn*rad1(i)**3/rhow !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
              diffvnd2=diffvnd1*1.d0/(rad(i)/(rad(i)+0.104d-6)+diffvnd1/(rad(i)*0.036)*sqrt(2.d0*pi/(Ra*temp)))
              ka2=ka1*1.d0/(rad(i)/(rad(i)+.216d-6)+ka1/(rad(i)*.7*rhoa*cp)*sqrt(2.d0*pi/(Ra*temp)))
              ks =1.d0/(rhow*Rv*temp/(esat*diffvnd2)+rhow*Lat/(Ka2*Temp)*(Lat/(Rv*Temp)-1))
-!print*,'ks',ks
-!!caculate equillibrium supersat.
+!!--------------caculate equillibrium supersat.
 
-!	      if(rad(i) .le. 1.d-6+rad1(i) ) then
-!             seq=exp(curv-solu/rad(i)**3)-1.d0!((1.d-9+rad(i))**3-rad1(i)**3))-1.d0
-!		  rm0=rad(i)+1.d0/rad(i)*delt*ks*(sp-curv+solu/rad(i)**3)
-!	      else
              seq=exp(curv-solu/(rad(i)**3-rad1(i)**3))-1.d0
-!                  rm0=rad(i)+1.d0/rad(i)*delt*ks*(sp-curv+solu/(rad(i)*3-rad1(i)**3))!!mark
-!	      endif
-!seq=0.d0
              rm0=rad(i)*3.0d0*delt*ks*(sp-seq)+rad(i)**3 !!r^3 scheme    
 
-!!                rm0=rad(i)+1.d0/rad(i)*delt*ks*(sp+1-exp(curv-solu/((rad(i)+4.59d-10)*3-rad1(i)**3)))!!mark
-!!                rm0=rad(i)+1.d0/rad(i)*delt*ks*(sp-curv+solu/rad(i)**3)!((rad(i)+4.59d-10)*3-rad1(i)**3))!!mark
-!             rm0=rad(i)**2+vtemp*sp +2.d0*delt*ks*(-curv/rad(i)+solu/rad(i)**3)
-!             rm0=3.d0*delt*ks*(sp*rad(i)-curv+solu/rad(i)**2)+rad(i)**3
-!             if (rm0 .gt. 0) rad(i)=sqrt(rm0)
-!!             if(rm0**(1.d0/3.d0) .gt. rad1(i)) rad(i)=(rm0)**(1.d0/3.d0) !r^3 scheme
 	      if(rm0 .gt. rad1(i)**3) then
 	        dr3(i)=rm0-rad(i)**3
 	        rad(i)=rm0**(1.d0/3.d0)
@@ -228,8 +208,6 @@
               write(51,145) time,(rad(i), i=1,nbinsout)
             endif
   100 enddo
-!      gamma=(temp-283.15)/(up*delt*ntmic)
-!      gamma1=-grav/cp +latovercp*cd/(up*time)
 
       close(unit=16)
       deallocate (dsd, rad, rad1,mass,dr3,rad_wet)
@@ -239,8 +217,8 @@
       end program myfirst
 
     SUBROUTINE IAEROSOL(disp,rad,mass,nrad,nbins,ndrop,iinit,ifinal,rm,nbinsout,GCCN)
-! This subroutine determines the initial position and size of all droplets
-!! for droplets locations & ID# & random # generator
+!---- This subroutine determines the initial position and size of all droplets
+!!----- for droplets locations & ID# & random # generator
   implicit none
 
   ! --- argument ---
@@ -335,13 +313,11 @@ rho_ccn=1726 !kg/m**3 for Ammonium sulfate
      rho_ccn=1726.d0!ammonium sulfate
      mass(1)=4.d0/3.d0*pi*rmin**3*rho_ccn
      bin_factor=2.0d0 !mass increment
-!     wid(1)=rad(1)*(bin_factor**(1.d0/3.d0)-1)!
      wid(1)=log(rad(1))-log(rad(1)/bin_factor**(1.d0/3.d0))
      do i=2,nbinsout
         mass(i)=mass(1)*bin_factor**i
         rad_power=real(i)/3.d0
         rad(i)=rad(1)*bin_factor**rad_power
-!        wid(i)=rad(i)-rad(i-1)
         wid(i)=log(rad(i))-log(rad(i-1))
         n1=48.d0!160!48.d0
         r1=.029d-6
@@ -354,8 +330,6 @@ rho_ccn=1726 !kg/m**3 for Ammonium sulfate
         logsig=log(logsig)
         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig)*exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
      enddo
-!     rm=sum(rad(1:nbinsout)**3*dNdlogr(1:nbinsout)* wid(1:nbinsout)) !/rad(1:nbinsout))
-!     ndrop=sum(dNdlogr(1:nbinsout)*wid(1:nbinsout)/rad(1:nbinsout))
      dNdr(1:nbinsout)=dNdlogr(1:nbinsout)/rad(1:nbinsout)
      nrad(1:nbinsout)=dNdlogr(1:nbinsout)*wid(1:nbinsout)
      ndrop=sum(nrad(1:nbinsout))
@@ -369,13 +343,11 @@ rho_ccn=1726 !kg/m**3 for Ammonium sulfate
      rho_ccn=1726.d0!ammonium sulfate
      mass(1)=4.d0/3.d0*pi*rmin**3*rho_ccn
      bin_factor=2.0d0 !mass increment
-!     wid(1)=rad(1)*(bin_factor**(1.d0/3.d0)-1)!
      wid(1)=log(rad(1))-log(rad(1)/bin_factor**(1.d0/3.d0))
      do i=2,nbinsout
         mass(i)=mass(1)*bin_factor**i
         rad_power=real(i)/3.d0
         rad(i)=rad(1)*bin_factor**rad_power
-!        wid(i)=rad(i)-rad(i-1)
         wid(i)=log(rad(i))-log(rad(i-1))
         n1=125.d0
         r1=.011d-6
@@ -388,8 +360,6 @@ rho_ccn=1726 !kg/m**3 for Ammonium sulfate
         logsig=log(logsig)
         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig)*exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
      enddo
-!        rm   =sum(rad(1:nbinsout)**3 * dNdlogr(1:nbinsout) * wid(1:nbinsout))   !/rad(1:nbinsout))
-!        ndrop= sum(dNdlogr(1:nbinsout) * wid(1:nbinsout) / rad(1:nbinsout))
         dNdr(1:nbinsout) = dNdlogr(1:nbinsout)/rad(1:nbinsout)
         nrad(1:nbinsout) = dNdlogr(1:nbinsout)*wid(1:nbinsout)
         ndrop=sum(nrad(1:nbinsout))
