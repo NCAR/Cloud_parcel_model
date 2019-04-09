@@ -8,7 +8,7 @@
       real*8 :: aa11,aa22,vtemp,vtemp1,delt
       real*8 :: thetap,qvp,deltaqp,dtheta,gamma,gamma1
       character*1 :: name
-      real(8), allocatable, dimension(:) :: rad,rad1,dsd,mass,dr3,rad_wet
+      real(8), allocatable, dimension(:) :: rad,rad1,dsd,dr3,rad_wet
       integer :: nbins,nbinsout,iinit,ifinal
       integer :: disp,GCCN
       integer :: iter,ntmic,ntot,i
@@ -20,42 +20,42 @@
       real,parameter :: pi=3.1415
       real,parameter ::  KK = 8.54d-11
       real,parameter :: grav=9.8
-      real,parameter :: visc = 1.78d-5!0.16d-4
-      real,parameter :: lat = 2.5d6!2.477d6
+      real,parameter :: visc = 0.16d-4!1.78e-5
+      real,parameter :: lat = 2.477d6!2.5e-6
       real,parameter :: up=2.d0
       real,parameter :: ra=287.0
-      real,parameter :: cp=1004!1005.0
-      real,parameter :: rv= 467!461.5
+      real,parameter :: cp=1005.0!1004.0
+      real,parameter :: rv= 461.5!467
       real,parameter :: m_w=18.d-3 !molecular weight of water
-      real,parameter :: m_s=132.14d-3!molecular weight of solute; ammonium sulfate=132.14d-3; NaCl = 58.44d-3
+      real,parameter :: m_s=58.44d-3!132.14d-3!molecular weight of solute; ammonium sulfate=132.14d-3; NaCl = 58.44d-3
       real,parameter :: rhow=1000.0
+      real,parameter :: rho_ccn = 2160.d0!1726.d0 !kg/m**3 for ammonium sulfate =1726.d0 for NaCl=2160.d0
       real,parameter :: eps=ra/rv
-      real,parameter :: vh=3. !van hoff factor
+      real,parameter :: vh=2!3. !van hoff factor
       real,parameter :: latovercp=lat/cp
-      real,parameter :: rho_ccn = 1726.d0 !kg/m**3 for ammonium sulfate =1726.d0 for NaCl=2160.d0
 196   format(1x,6(f16.8,2x))
 145   format(1x,100(e16.8,2x))
 
-      time_prep=1.d0
+      time_prep=.0
       delt= 1.d-04
-      ntot=200./delt
+      ntot=300./delt
       !setup output files
       OPEN(UNIT=16,FILE='new.out',ACCESS='APPEND')!parcel mean variables
       OPEN(UNIT=50,FILE='new.dsd',ACCESS='APPEND')!number concentration of each bin
       OPEN(UNIT=51,FILE='new.rad',ACCESS='APPEND')!droplet size of each bin
       OPEN(UNIT=60,FILE='new.test',ACCESS='APPEND')!output the tested variables
 !--------------initialize aerosols---------
-      disp = 30
+      disp = 32
       GCCN = 0 !=1 insert Giant CCN =2 monotonic seeding r=1micron;!=3 add 3 mode lognormal seeding distribution by Cooper et al. 1997
       !disp=35 Xue10 urban, 30 Xue10 marine, 31 JN17 polluted, 32 NJ17 pristine
-      nbins = 100
-      allocate (dsd(nbins),rad(nbins),rad1(nbins),mass(nbins),dr3(nbins),rad_wet(nbins))
+      nbins = 200
+      allocate (dsd(nbins),rad(nbins),rad1(nbins),dr3(nbins),rad_wet(nbins))
       rm =0.d0!1.d-5
       rad=rm
       dsd=0.d0
       dr3=0.d0
 !      ndrop=2.d2 !cm^-3
-      call iaerosol(disp,rad,mass,dsd,nbins,ndrop,iinit,ifinal,rm,nbinsout,GCCN)
+      call iaerosol(disp,rad,dsd,nbins,ndrop,rho_ccn,rm,nbinsout,GCCN)
       print*,'nbinsout,GCCN',nbinsout,GCCN
       write(50,145) 0.,(dsd(i), i=1,nbinsout)
       write(51,145) 0.,(rad(i), i=1,nbinsout)
@@ -82,7 +82,7 @@
       qvpp= (sp+1.d0)*qvs !kg/m^3
       rhoa=pp/(Ra*(1+18.d0/29.d0*qvpp)*temp)
       rhoa0=rhoa
-      write(16,*) 0.d0-time_prep,up*delt*ntmic,Sp,cd,rad(5),rad(15),rad(40),pp,temp,281.5-grav/cp*delt*up,& !8
+      write(16,*) 0.d0-time_prep,up*delt*ntmic-287.6,Sp,cd,rad(5),rad(15),rad(40),pp,temp,281.5-grav/cp*delt*up,& !8
                 thetapp,qvpp,qvs,rm,rhoa,LATOVERCP*DELTAQP/EXNER,deltaqp
 !--------------first guess the radius of wet aerosol--------!
 !--------------start with r_wet=1.5*r_d-----------------------!
@@ -100,7 +100,7 @@
          ka2=ka1*1.d0/(rad_wet(i)/(rad_wet(i)+.216d-6)+ka1/(rad_wet(i)*.7*rhoa*cp)*sqrt(2.d0*pi/(Ra*temp)))
          ks = 1.d0/(rhow*Rv*temp/(esat*diffvnd2)+rhow*Lat/(Ka2*Temp)*(Lat/(Rv*Temp)-1))
          curv=2.d0*7.61d-2/(Rv*rhow*temp*rad_wet(i))  
-         solu=vh*m_w/m_s*rho_ccn*rad1(i)**3/rhow!4.3d0*2.d0*mass(i)/132.14d0*1.d-6 !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
+         solu=vh*m_w/m_s*rho_ccn*rad1(i)**3/rhow !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
          seq=exp(curv-solu/(rad_wet(i)**3-rad1(i)**3))-1.d0
          if(seq .gt. sp) then
 	   rad_wet(i)=rad_wet(i)-rad1(i)*1.d-6
@@ -111,6 +111,7 @@
       enddo
       rad=rad_wet
 !--------------spin-up------------------
+if(time_prep .ne. 0) then
       upp=0.d0
       do 200 ntmic=1,int(time_prep/delt*2.d0)
          time = ntmic*delt/2.d0-time_prep
@@ -132,7 +133,7 @@
           ka1=1.5d-11*temp**3-4.8d-8*temp**2+1.d-4*temp-3.9d-4
           do i = 1,nbinsout
              curv=2.d0*7.61d-2/(Rv*rhow*temp*rad(i)) !curvature effect coefficient !in m
-             solu=vh*m_w/m_s*rho_ccn*rad1(i)**3/rhow!4.3d0*2.d0*mass(i)/132.14d0*1.d-6 !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
+             solu=vh*m_w/m_s*rho_ccn*rad1(i)**3/rhow!solute effect coefficient ms=132.14 for ammonium sulfate !m^3
              diffvnd2=diffvnd1*1.d0/(rad(i)/(rad(i)+0.104d-6)+diffvnd1/(rad(i)*0.036)*sqrt(2.d0*pi/(Ra*temp)))
              ka2=ka1*1.d0/(rad(i)/(rad(i)+.216d-6)+ka1/(rad(i)*.7*rhoa*cp)*sqrt(2.d0*pi/(Ra*temp)))
              ks =1.d0/(rhow*Rv*temp/(esat*diffvnd2)+rhow*Lat/(Ka2*Temp)*(Lat/(Rv*Temp)-1))
@@ -155,6 +156,7 @@
              write(51,145) time,(rad(i), i=1,nbinsout)
 	  endif
   200 enddo
+endif ! spin_up
 !--------------evolution------------------
       do 100 ntmic=1,ntot
          time = ntmic*delt
@@ -202,7 +204,7 @@
           enddo 
              rm=(sum(rad(1:nbinsout)**3*dsd(1:nbinsout))/ndrop)**(1.d0/3.0d0)
             if(mod(ntmic,ntot/1000) .eq. 0 .or. ntot .le. 1000) then
-              write(16,*) time,up*delt*ntmic,Sp,cd,rad(5),rad(15),rad(40),pp,temp,281.5-grav/cp*delt*up*ntmic,&
+              write(16,*) time,up*delt*ntmic-287.6,Sp,cd,rad(5),rad(15),rad(40),pp,temp,281.5-grav/cp*delt*up*ntmic,&
                 thetapp,qvpp,qvs,rm,rhoa,LATOVERCP*DELTAQP/EXNER,deltaqp
               write(50,145) time,(dsd(i), i=1,nbinsout)
               write(51,145) time,(rad(i), i=1,nbinsout)
@@ -210,20 +212,20 @@
   100 enddo
 
       close(unit=16)
-      deallocate (dsd, rad, rad1,mass,dr3,rad_wet)
+      deallocate (dsd, rad, rad1,dr3,rad_wet)
       close(unit=50)
 
 
       end program myfirst
 
-    SUBROUTINE IAEROSOL(disp,rad,mass,nrad,nbins,ndrop,iinit,ifinal,rm,nbinsout,GCCN)
+    SUBROUTINE IAEROSOL(disp,rad,nrad,nbins,ndrop,rho_ccn,rm,nbinsout,GCCN)
 !---- This subroutine determines the initial position and size of all droplets
 !!----- for droplets locations & ID# & random # generator
   implicit none
 
   ! --- argument ---
   integer :: nbins,nbinsout,GCCN
-  real(8), dimension(nbins) :: rad,nrad,mass
+  real(8), dimension(nbins) :: rad,nrad
   integer :: disp,iinit,ifinal
   real(8) :: rm,ndrop
 
@@ -231,7 +233,8 @@
 
   integer :: i
   real(8), allocatable, dimension(:) :: wid,dNdlogr,dNdr
-  real(8) :: r1,n1,logsig,rmin,rmax,rho_ccn
+  real(8) :: r1,n1,logsig,rmin,rmax
+  real :: rho_ccn
   real(8) :: logrmin,logrmax,rad_power,bin_factor
   real,parameter :: pi=3.14159265
  145   format(1x,100(e16.8,2x))
@@ -247,18 +250,14 @@ allocate(wid(nbins),dNdlogr(nbins),dNdr(nbins))
 dNdlogr = 0.0
 dNdr = 0.0d0
 wid =0.d0
-mass=0.d0
-rho_ccn=1726 !kg/m**3 for Ammonium sulfate
 !size dispersion
   if (disp .eq. 30) then !lulin maritime case
      nbinsout=39
      rmin = 6.d-9
      rad(1)=rmin
-     mass(1)=4.d0/3.d0*pi*rmin**3*rho_ccn 
      bin_factor=2.d0
      wid(1)=rad(1)*(bin_factor**(1.d0/3.d0)-1.d0)
      do i=2,nbinsout
-        mass(i)=mass(1)*bin_factor**i
         rad_power=real(i)/3.d0
         rad(i)=rad(1)*bin_factor**rad_power
         wid(i)=rad(i)-rad(i-1)
@@ -308,17 +307,16 @@ rho_ccn=1726 !kg/m**3 for Ammonium sulfate
      enddo
   elseif (disp .eq. 31) then !Jensen&Nugent 2017 modified polluted case
      nbinsout=30
-     rmin = 2.0514d-9
+     rmin = 1.d-8
      rad(1)=rmin
-     rho_ccn=1726.d0!ammonium sulfate
-     mass(1)=4.d0/3.d0*pi*rmin**3*rho_ccn
      bin_factor=2.0d0 !mass increment
      wid(1)=log(rad(1))-log(rad(1)/bin_factor**(1.d0/3.d0))
      do i=2,nbinsout
-        mass(i)=mass(1)*bin_factor**i
         rad_power=real(i)/3.d0
         rad(i)=rad(1)*bin_factor**rad_power
-        wid(i)=log(rad(i))-log(rad(i-1))
+        wid(i)=rad(i)-rad(i-1)
+     enddo
+     do i=1,nbinsout
         n1=48.d0!160!48.d0
         r1=.029d-6
         logsig=1.36d0
@@ -337,18 +335,17 @@ rho_ccn=1726 !kg/m**3 for Ammonium sulfate
 
 
   elseif (disp .eq. 32) then !Jensen&Nugent 2017 pristine case
-     nbinsout=30
-     rmin = 2.1d-9
+     nbinsout=39
+     rmin = 1.d-8
      rad(1)=rmin
-     rho_ccn=1726.d0!ammonium sulfate
-     mass(1)=4.d0/3.d0*pi*rmin**3*rho_ccn
      bin_factor=2.0d0 !mass increment
      wid(1)=log(rad(1))-log(rad(1)/bin_factor**(1.d0/3.d0))
      do i=2,nbinsout
-        mass(i)=mass(1)*bin_factor**i
         rad_power=real(i)/3.d0
         rad(i)=rad(1)*bin_factor**rad_power
-        wid(i)=log(rad(i))-log(rad(i-1))
+        wid(i)=rad(i)-rad(i-1)
+     enddo
+     do i=1,nbinsout
         n1=125.d0
         r1=.011d-6
         logsig=1.2d0
@@ -364,15 +361,13 @@ rho_ccn=1726 !kg/m**3 for Ammonium sulfate
         nrad(1:nbinsout) = dNdlogr(1:nbinsout)*wid(1:nbinsout)
         ndrop=sum(nrad(1:nbinsout))
         rm = sum(rad(1:nbinsout)**3*nrad(1:nbinsout))
+     print*,'radmin, radmax',rmin,rad(nbinsout),'ndrop=',ndrop!mark
   elseif (disp .eq. 35) then !Lulin 2010 rural
      rmin = 6.d-9
      rad(1)=rmin
-     rho_ccn=1726.d0
-     mass(1)=4.d0/3.d0*pi*rmin**3*rho_ccn
      bin_factor=2.d0 !mass increment
      wid(1)=rad(1)*(bin_factor**(1.d0/3.0d0)-1)
      do i=2,35
-        mass(i)=mass(1)*bin_factor**i
         rad_power=real(i)/3.0
         rad(i)=rad(1)*bin_factor**rad_power
         wid(i)=rad(i)-rad(i-1)
@@ -476,7 +471,6 @@ rho_ccn=1726 !kg/m**3 for Ammonium sulfate
   if(GCCN .eq. 1) then
      do i=1,42
         rad(nbinsout+i)=.8d-6+0.2d-6*real(i-1)
-        mass(nbinsout+i)=4.d0/3.d0*pi*rad(nbinsout+i)**3*rho_ccn
      enddo
         nrad(nbinsout+1)=0.1118d0
         nrad(nbinsout+2)=.06849d0!1micron
@@ -523,12 +517,11 @@ rho_ccn=1726 !kg/m**3 for Ammonium sulfate
         nbinsout=nbinsout+42
   elseif (GCCN==2) then
         rad(nbinsout+1)=1.d-6
-	mass=4.d0/3.d0*pi*rad(nbinsout+1)**3*rho_ccn
         nrad(nbinsout+1)=10
         nbinsout=nbinsout+1
   endif!GCCN
   ndrop=sum(nrad(1:nbinsout))
-  write(60,145) 0.,(dNdlogr(i), i=1,nbinsout)
+  write(50,145) 0.,(dNdlogr(i), i=1,nbinsout)
   rm = (sum(rad(1:nbinsout)**3*nrad(1:nbinsout))/ndrop)**(1.d0/3.d0)
 
   print*,"rm", rm,ndrop,10.d0**(floor(log10(rad(7))))
