@@ -1,4 +1,4 @@
-      program myfirst
+program myfirst
         !aerosol activation for parcel of 1m^3 in volume
       implicit none
       real*8 :: tau,source,qvpp,qvs,PP,esat,ks,temp,dp,time,temp0,upp,time_prep
@@ -20,19 +20,19 @@
       real,parameter :: pi=3.1415
       real,parameter ::  KK = 8.54d-11
       real,parameter :: grav=9.8
-      real,parameter :: visc = 0.16d-4!1.78e-5
-      real,parameter :: lat = 2.477d6!2.5e-6
+      real,parameter :: visc = 1.78e05!0.16d-4!1.78e-5
+      real,parameter :: lat = 2.5e-6!2.477d6!2.5e-6
       real,parameter :: up=2.d0
       real,parameter :: ra=287.0
-      real,parameter :: cp=1005.0!1004.0
-      real,parameter :: rv= 461.5!467
+      real,parameter :: cp=1004.0!1005.0
+      real,parameter :: rv= 467!461.5!467
       real,parameter :: m_w=18.d-3 !molecular weight of water
-      real,parameter :: m_s=58.44d-3!132.14d-3!molecular weight of solute; ammonium sulfate=132.14d-3; NaCl = 58.44d-3
       real,parameter :: rhow=1000.0
-      real,parameter :: rho_ccn = 2160.d0!1726.d0 !kg/m**3 for ammonium sulfate =1726.d0 for NaCl=2160.d0
       real,parameter :: eps=ra/rv
-      real,parameter :: vh=2!3. !van hoff factor
       real,parameter :: latovercp=lat/cp
+      real :: vh !van Hoff factor 
+      real :: m_s !molecular weight of solute; ammonium sulfate=132.14d-3; NaCl = 58.44d-3
+      real :: rho_ccn!kg/m**3 for ammonium sulfate =1726.d0 for NaCl=2160.d0
 196   format(1x,6(f16.8,2x))
 145   format(1x,100(e16.8,2x))
 
@@ -45,10 +45,20 @@
       OPEN(UNIT=51,FILE='new.rad',ACCESS='APPEND')!droplet size of each bin
       OPEN(UNIT=60,FILE='new.test',ACCESS='APPEND')!output the tested variables
 !--------------initialize aerosols---------
-      disp = 32
+      disp = 30
       GCCN = 0 !=1 insert Giant CCN =2 monotonic seeding r=1micron;!=3 add 3 mode lognormal seeding distribution by Cooper et al. 1997
       !disp=35 Xue10 urban, 30 Xue10 marine, 31 JN17 polluted, 32 NJ17 pristine
-      nbins = 200
+      if (disp .eq. 30 .or. disp .eq. 35 ) then !Xue10  case
+	rho_ccn=2160.d0!1726.d0 !ammonium sulfate
+	m_s=58.44d-3!132.14d-3 
+	vh = 2.!3.
+      elseif (disp .eq. 31 .or. disp .eq. 32) then !NJ17
+	rho_ccn=2160.d0 !NaCl
+	m_s=58.44d-3
+	vh = 2.
+	GCCN=1
+      endif
+      nbins = 100
       allocate (dsd(nbins),rad(nbins),rad1(nbins),dr3(nbins),rad_wet(nbins))
       rm =0.d0!1.d-5
       rad=rm
@@ -68,7 +78,7 @@
       temp=284.3d0!281.5d0!284.3!293.15
       p1=93850.0d0!90650.d0!93850.0!95000.0
       p0=1.d5
-      sp = -14.39d-2!0.d0!-14.39d-2
+      sp = -10.d-2!-14.39d-2!0.d0!-14.39d-2
       pp=p1
       sumrp=0.d0!mark new cdp sumrp=sum(r**2*dr)
       racp= ra/cp
@@ -310,7 +320,7 @@ wid =0.d0
      rmin = 1.d-8
      rad(1)=rmin
      bin_factor=2.0d0 !mass increment
-     wid(1)=log(rad(1))-log(rad(1)/bin_factor**(1.d0/3.d0))
+     wid(1)=rad(1)*(bin_factor**(1.d0/3.d0)-1.d0)
      do i=2,nbinsout
         rad_power=real(i)/3.d0
         rad(i)=rad(1)*bin_factor**rad_power
@@ -329,7 +339,7 @@ wid =0.d0
         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig)*exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
      enddo
      dNdr(1:nbinsout)=dNdlogr(1:nbinsout)/rad(1:nbinsout)
-     nrad(1:nbinsout)=dNdlogr(1:nbinsout)*wid(1:nbinsout)
+     nrad(1:nbinsout)=dNdr(1:nbinsout)*wid(1:nbinsout)
      ndrop=sum(nrad(1:nbinsout))
      rm = sum(rad(1:nbinsout)**3*nrad(1:nbinsout))
 
@@ -339,7 +349,7 @@ wid =0.d0
      rmin = 1.d-8
      rad(1)=rmin
      bin_factor=2.0d0 !mass increment
-     wid(1)=log(rad(1))-log(rad(1)/bin_factor**(1.d0/3.d0))
+     wid(1)=rad(1)*(bin_factor**(1.d0/3.d0)-1.d0)
      do i=2,nbinsout
         rad_power=real(i)/3.d0
         rad(i)=rad(1)*bin_factor**rad_power
@@ -358,7 +368,7 @@ wid =0.d0
         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig)*exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
      enddo
         dNdr(1:nbinsout) = dNdlogr(1:nbinsout)/rad(1:nbinsout)
-        nrad(1:nbinsout) = dNdlogr(1:nbinsout)*wid(1:nbinsout)
+        nrad(1:nbinsout) = dNdr(1:nbinsout)*wid(1:nbinsout)
         ndrop=sum(nrad(1:nbinsout))
         rm = sum(rad(1:nbinsout)**3*nrad(1:nbinsout))
      print*,'radmin, radmax',rmin,rad(nbinsout),'ndrop=',ndrop!mark
