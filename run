@@ -2,4 +2,5 @@
 rm thiseX 
 #test.out
 gfortran activation.F90 -o thiseX
-./thiseX > stdout
+#./thiseX > stdout
+qsub run_cheyenne 
