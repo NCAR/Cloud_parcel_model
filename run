@@ -1,6 +1,6 @@
 #!/bin/bash
-rm thiseX 
+rm eXparcel 
 #test.out
-gfortran activation.F90 -o thiseX
+gfortran activation.F90 -o eXparcel
 #./thiseX > stdout
 qsub run_cheyenne 

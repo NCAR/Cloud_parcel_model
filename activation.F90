@@ -30,7 +30,7 @@ program myfirst
       real,parameter :: rhow=1000.0
       real,parameter :: eps=ra/rv
       real,parameter :: latovercp=lat/cp
-      real,parameter :: sigma_sa=7.61e-2
+      real*8,parameter :: sigma_sa=7.61d-2
       real :: up,vh !updraft velo and van Hoff factor 
       real :: m_s !molecular weight of solute; ammonium sulfate=132.14d-3; NaCl = 58.44d-3
       real :: rho_ccn!kg/m**3 for ammonium sulfate =1726.d0 for NaCl=2160.d0
@@ -40,7 +40,7 @@ program myfirst
       time_prep=.0
       delt= 1.d-04
       ntot=300./delt
-      name = 'isolu2'
+      name = 'Nsolu2'
       !setup output files
       OPEN(UNIT=16,FILE=name//'.out',ACCESS='APPEND')!parcel mean variables
       OPEN(UNIT=50,FILE=name//'.dsd',ACCESS='APPEND')!number concentration of each bin
@@ -86,7 +86,7 @@ program myfirst
       temp=284.3d0!281.5d0!284.3!293.15
       p1=93850.0d0!90650.d0!93850.0!95000.0
       p0=1.d5
-      sp = -10.d-2!-14.39d-2!0.d0!-14.39d-2
+      sp = -14.39d-2!0.d0!-14.39d-2
       pp=p1
       sumrp=0.d0!mark new cdp sumrp=sum(r**2*dr)
       racp= ra/cp
@@ -120,11 +120,13 @@ program myfirst
          curv=2.d0*sigma_sa/(Rv*rhow*temp*rad_wet(i))  
          if(isolu .eq. 1) then !kappa
             solu=(rad_wet(i)**3-rad1(i)**3)/(rad_wet(i)**3-(1-kappa(i))*rad1(i)**3)
+            seq = solu * exp(curv)-1.d0
          elseif (isolu .eq. 2) then !classical solute term
-            solu=exp(-vh*m_w/m_s*rho_ccn/rhow*rad1(i)**3/(rad_wet(i)**3-rad1(i)**3)) !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
-         !seq=exp(curv-solu/(rad_wet(i)**3-rad1(i)**3))-1.d0
+            !solu=exp(-vh*m_w/m_s*rho_ccn/rhow*rad1(i)**3/(rad_wet(i)**3-rad1(i)**3)) !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
+            solu = vh*m_w/m_s*rho_ccn*rad1(i)**3/rhow
+            seq =exp(curv-solu/(rad_wet(i)**3-rad1(i)**3))-1.d0
          endif !isolu
-         seq=solu*exp(curv)-1.d0
+         !seq=solu*exp(curv)-1.d0
          if(seq .gt. sp) then
 	         rad_wet(i)=rad_wet(i)-rad1(i)*1.d-6
 	      elseif(seq .lt. sp) then 
@@ -158,15 +160,18 @@ if(time_prep .ne. 0) then
              curv=2.d0*sigma_sa/(Rv*rhow*temp*rad(i)) !curvature effect coefficient !unit in m
             if(isolu .eq. 1) then !kappa
                solu=(rad_wet(i)**3-rad1(i)**3)/(rad_wet(i)**3-(1-kappa(i))*rad1(i)**3)
+               seq = solu * exp(curv)-1.d0
             elseif (isolu .eq. 2) then !classical solute term
-               solu=exp(-vh*m_w/m_s*rho_ccn/rhow*rad1(i)**3/(rad_wet(i)**3-rad1(i)**3)) !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
-               !seq=exp(curv-solu/(rad_wet(i)**3-rad1(i)**3))-1.d0
-            endif !isolu             diffvnd2=diffvnd1*1.d0/(rad(i)/(rad(i)+0.104d-6)+diffvnd1/(rad(i)*0.036)*sqrt(2.d0*pi/(Ra*temp)))
-             ka2=ka1*1.d0/(rad(i)/(rad(i)+.216d-6)+ka1/(rad(i)*.7*rhoa*cp)*sqrt(2.d0*pi/(Ra*temp)))
-             ks =1.d0/(rhow*Rv*temp/(esat*diffvnd2)+rhow*Lat/(Ka2*Temp)*(Lat/(Rv*Temp)-1))
+               !solu=exp(-vh*m_w/m_s*rho_ccn/rhow*rad1(i)**3/(rad_wet(i)**3-rad1(i)**3)) !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
+               solu = vh*m_w/m_s*rho_ccn/rhow*rad1(i)**3
+               seq =exp(curv-solu/(rad_wet(i)**3-rad1(i)**3))-1.d0
+            endif !isolu     
+            diffvnd2=diffvnd1*1.d0/(rad(i)/(rad(i)+0.104d-6)+diffvnd1/(rad(i)*0.036)*sqrt(2.d0*pi/(Ra*temp)))     
+            ka2=ka1*1.d0/(rad(i)/(rad(i)+.216d-6)+ka1/(rad(i)*.7*rhoa*cp)*sqrt(2.d0*pi/(Ra*temp)))
+            ks =1.d0/(rhow*Rv*temp/(esat*diffvnd2)+rhow*Lat/(Ka2*Temp)*(Lat/(Rv*Temp)-1))
             !!caculate equillibrium supersat.
              !seq=exp(curv-solu/(rad(i)**3-rad1(i)**3))-1.d0
-             seq=solu*exp(curv)-1.d0
+             !seq=solu*exp(curv)-1.d0
              rm0=rad(i)*3.0d0*delt*ks*(sp-seq)+rad(i)**3 !!r^3 scheme
              if(rm0 .gt. rad1(i)**3) then
                 dr3(i)=rm0-rad(i)**3
@@ -215,25 +220,27 @@ endif ! spin_up
              curv=2.d0*sigma_sa/(Rv*rhow*temp*rad(i)) !curvature effect coefficient !in m
             if(isolu .eq. 1) then !kappa
                solu=(rad_wet(i)**3-rad1(i)**3)/(rad_wet(i)**3-(1-kappa(i))*rad1(i)**3)
+               seq = solu * exp(curv)-1.d0
             elseif (isolu .eq. 2) then !classical solute term
-               solu=exp(-vh*m_w/m_s*rho_ccn/rhow*rad1(i)**3/(rad_wet(i)**3-rad1(i)**3)) !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
-               !seq=exp(curv-solu/(rad_wet(i)**3-rad1(i)**3))-1.d0
+               !solu=exp(-vh*m_w/m_s*rho_ccn/rhow*rad1(i)**3/(rad_wet(i)**3-rad1(i)**3)) !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
+               solu = vh*m_w/m_s*rho_ccn/rhow*rad1(i)**3
+               seq =exp(curv-solu/(rad_wet(i)**3-rad1(i)**3))-1.d0
             endif !isolu
-             diffvnd2=diffvnd1*1.d0/(rad(i)/(rad(i)+0.104d-6)+diffvnd1/(rad(i)*0.036)*sqrt(2.d0*pi/(Ra*temp)))
-             ka2=ka1*1.d0/(rad(i)/(rad(i)+.216d-6)+ka1/(rad(i)*.7*rhoa*cp)*sqrt(2.d0*pi/(Ra*temp)))
-             ks =1.d0/(rhow*Rv*temp/(esat*diffvnd2)+rhow*Lat/(Ka2*Temp)*(Lat/(Rv*Temp)-1))
+               diffvnd2=diffvnd1*1.d0/(rad(i)/(rad(i)+0.104d-6)+diffvnd1/(rad(i)*0.036)*sqrt(2.d0*pi/(Ra*temp)))
+               ka2=ka1*1.d0/(rad(i)/(rad(i)+.216d-6)+ka1/(rad(i)*.7*rhoa*cp)*sqrt(2.d0*pi/(Ra*temp)))
+               ks =1.d0/(rhow*Rv*temp/(esat*diffvnd2)+rhow*Lat/(Ka2*Temp)*(Lat/(Rv*Temp)-1))
 !!--------------caculate equillibrium supersat.
 
              !seq=exp(curv-solu/(rad(i)**3-rad1(i)**3))-1.d0
-             seq=solu*exp(curv)-1.d0
+             !seq=solu*exp(curv)-1.d0
              rm0=rad(i)*3.0d0*delt*ks*(sp-seq)+rad(i)**3 !!r^3 
 
 	      if(rm0 .gt. rad1(i)**3) then
-	        dr3(i)=rm0-rad(i)**3
-	        rad(i)=rm0**(1.d0/3.d0)
+	         dr3(i)=rm0-rad(i)**3
+	         rad(i)=rm0**(1.d0/3.d0)
 	      else
-		dr3(i)=0.d0
-                rad(i)=rad1(i)
+		      dr3(i)=0.d0
+            rad(i)=rad1(i)
 	      endif
           enddo 
              rm=(sum(rad(1:nbinsout)**3*dsd(1:nbinsout))/ndrop)**(1.d0/3.0d0)
