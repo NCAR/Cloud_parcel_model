@@ -22,7 +22,7 @@ program myfirst
       real,parameter :: grav=9.8
       real,parameter :: visc = 1.78e05!0.16d-4!1.78e-5
       real,parameter :: lat = 2.5e-6!2.477d6!2.5e-6
-!      real,parameter :: up=2.d0
+      !real,parameter :: up=2.d0
       real,parameter :: ra=287.0
       real,parameter :: cp=1004.0!1005.0
       real,parameter :: rv= 467!461.5!467
@@ -48,7 +48,8 @@ program myfirst
       OPEN(UNIT=60,FILE=name//'.test',ACCESS='APPEND')!output the tested variables
 !--------------initialize aerosols---------
       disp = 30
-      GCCN = 0 !=1 insert Giant CCN =2 monotonic seeding r=1micron;!=3 add 3 mode lognormal seeding distribution by Cooper et al. 1997
+      GCCN = 0 
+      !GCCN=1 insert Giant CCN =2 monotonic seeding r=1micron;!=3 add 3 mode lognormal seeding distribution by Cooper et al. 1997
       !disp=35 Xue10 urban, 30 Xue10 marine, 31 JN17 polluted, 32 NJ17 pristine
       isolu = 2 !=1 kappa form solute term; =2 classical solute term
       up = 2.0
@@ -58,21 +59,18 @@ program myfirst
 	      rho_ccn=1726.d0!2160.d0!1726.d0 !ammonium sulfate
 	      m_s=132.14d-3!58.44d-3!132.14d-3 
 	      vh = 3.!2.
-         kappa=vh*m_w/m_s*rho_ccn/rhow
-         print*,'kappa',kappa(1)
       elseif (disp .eq. 31 .or. disp .eq. 32) then !NJ17
 	      rho_ccn=2160.d0 !NaCl
 	      m_s=58.44d-3
 	      vh = 2.
 	      GCCN=1
-         kappa=vh*m_w/m_s*rho_ccn/rhow
-         print*,'kappa',kappa(1)
       endif
+      kappa=vh*m_w/m_s*rho_ccn/rhow
+      print*,'kappa',kappa(1)
       rm =0.d0!1.d-5
       rad=rm
       dsd=0.d0
       dr3=0.d0
-!      ndrop=2.d2 !cm^-3
       call iaerosol(disp,rad,dsd,nbins,ndrop,rho_ccn,rm,nbinsout,GCCN)
       print*,'nbinsout,GCCN',nbinsout,GCCN
       write(50,145) 0.,(dsd(i), i=1,nbinsout)
@@ -83,8 +81,8 @@ program myfirst
       h = 1.d-2 !.01m=1cm
       vol = h**3
       cd=sum(rad(1:nbinsout)**3*dsd(1:nbinsout))*4.d0/3.d0*pi*rhow/vol!condensation
-      temp=284.3d0!281.5d0!284.3!293.15
-      p1=93850.0d0!90650.d0!93850.0!95000.0
+      temp=284.3d0
+      p1=93850.0d0
       p0=1.d5
       sp = -14.39d-2!0.d0!-14.39d-2
       pp=p1
@@ -118,15 +116,14 @@ program myfirst
          ka2=ka1*1.d0/(rad_wet(i)/(rad_wet(i)+.216d-6)+ka1/(rad_wet(i)*.7*rhoa*cp)*sqrt(2.d0*pi/(Ra*temp)))
          ks = 1.d0/(rhow*Rv*temp/(esat*diffvnd2)+rhow*Lat/(Ka2*Temp)*(Lat/(Rv*Temp)-1))
          curv=2.d0*sigma_sa/(Rv*rhow*temp*rad_wet(i))  
+
          if(isolu .eq. 1) then !kappa
             solu=(rad_wet(i)**3-rad1(i)**3)/(rad_wet(i)**3-(1-kappa(i))*rad1(i)**3)
-            seq = solu * exp(curv)-1.d0
          elseif (isolu .eq. 2) then !classical solute term
-            !solu=exp(-vh*m_w/m_s*rho_ccn/rhow*rad1(i)**3/(rad_wet(i)**3-rad1(i)**3)) !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
-            solu = vh*m_w/m_s*rho_ccn*rad1(i)**3/rhow
-            seq =exp(curv-solu/(rad_wet(i)**3-rad1(i)**3))-1.d0
+            solu=exp(-vh*m_w/m_s*rho_ccn/rhow*rad1(i)**3/(rad_wet(i)**3-rad1(i)**3)) !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
          endif !isolu
-         !seq=solu*exp(curv)-1.d0
+
+         seq = solu * exp(curv)-1.d0           
          if(seq .gt. sp) then
 	         rad_wet(i)=rad_wet(i)-rad1(i)*1.d-6
 	      elseif(seq .lt. sp) then 
@@ -159,19 +156,16 @@ if(time_prep .ne. 0) then
           do i = 1,nbinsout
              curv=2.d0*sigma_sa/(Rv*rhow*temp*rad(i)) !curvature effect coefficient !unit in m
             if(isolu .eq. 1) then !kappa
-               solu=(rad_wet(i)**3-rad1(i)**3)/(rad_wet(i)**3-(1-kappa(i))*rad1(i)**3)
-               seq = solu * exp(curv)-1.d0
+               solu=(rad(i)**3-rad1(i)**3)/(rad(i)**3-(1-kappa(i))*rad1(i)**3)
             elseif (isolu .eq. 2) then !classical solute term
-               !solu=exp(-vh*m_w/m_s*rho_ccn/rhow*rad1(i)**3/(rad_wet(i)**3-rad1(i)**3)) !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
-               solu = vh*m_w/m_s*rho_ccn/rhow*rad1(i)**3
-               seq =exp(curv-solu/(rad_wet(i)**3-rad1(i)**3))-1.d0
-            endif !isolu     
+               solu=exp(-vh*m_w/m_s*rho_ccn*rad1(i)**3/rhow/(rad(i)**3-rad1(i)**3))
+            endif !isolu
+            
             diffvnd2=diffvnd1*1.d0/(rad(i)/(rad(i)+0.104d-6)+diffvnd1/(rad(i)*0.036)*sqrt(2.d0*pi/(Ra*temp)))     
             ka2=ka1*1.d0/(rad(i)/(rad(i)+.216d-6)+ka1/(rad(i)*.7*rhoa*cp)*sqrt(2.d0*pi/(Ra*temp)))
             ks =1.d0/(rhow*Rv*temp/(esat*diffvnd2)+rhow*Lat/(Ka2*Temp)*(Lat/(Rv*Temp)-1))
             !!caculate equillibrium supersat.
-             !seq=exp(curv-solu/(rad(i)**3-rad1(i)**3))-1.d0
-             !seq=solu*exp(curv)-1.d0
+             seq = solu * exp(curv)-1.d0
              rm0=rad(i)*3.0d0*delt*ks*(sp-seq)+rad(i)**3 !!r^3 scheme
              if(rm0 .gt. rad1(i)**3) then
                 dr3(i)=rm0-rad(i)**3
@@ -193,57 +187,47 @@ endif ! spin_up
 !--------------evolution------------------
       do 100 ntmic=1,ntot
          time = ntmic*delt
-!         dp = rhoa*grav*Up*delt
-!         PP = PP-DP
          pp=rhoa*Ra*(1+m_w/29.d-3*qvpp)*temp
          exner = (PP/P0)**RACP         
-!         sumrp = sum(rad(1:nbinsout)*dsd(1:nbinsout))!mark old cdp
          sumrp=sum(dr3(1:nbinsout)*dsd(1:nbinsout))/3.d0
-	 deltaqp=cql*sumrp!new cdp condensation
-!         print*,'cdold,new',(sum(rad(1:nbinsout)**3*dsd(1:nbinsout))*4.d0/3.d0*pi*rhow)/vol-cd,deltaqp
+	      deltaqp=cql*sumrp!cdp condensation
          cd=sum(rad(1:nbinsout)**3*dsd(1:nbinsout))*4.d0/3.d0*pi*rhow/vol!!mark
-!         cdp=delt*cql*ks*sumrp!mark old sp
          temp0=temp
          temp=temp0-grav/cp*delt*up+latovercp*deltaqp!mark new
          esat=2.53d11*exp(-5.42d3/temp)
          qvs = eps*esat/(PP-esat)
-!          rhoa=pp/(Ra*temp)
          rhoa= rhoa*(-grav*up/(Ra*temp)*delt-(temp-temp0)/temp)+rhoa
-          thetapp=thetapp+latovercp*deltaqp/exner
-          qvpp    = qvpp - deltaqp
-	  sp = qvpp/qvs-1.d0 !mark new sp
-          rm=0.d0
-          diffvnd1=1.d-5*(0.015*Temp-1.9)
-          ka1=1.5d-11*temp**3-4.8d-8*temp**2+1.d-4*temp-3.9d-4
+         thetapp=thetapp+latovercp*deltaqp/exner
+         qvpp    = qvpp - deltaqp
+	      sp = qvpp/qvs-1.d0 !mark new sp
+         rm=0.d0
+         diffvnd1=1.d-5*(0.015*Temp-1.9)
+         ka1=1.5d-11*temp**3-4.8d-8*temp**2+1.d-4*temp-3.9d-4
           do i = 1,nbinsout
 !             curv=3.3d-7/(temp*rad(i))!
              curv=2.d0*sigma_sa/(Rv*rhow*temp*rad(i)) !curvature effect coefficient !in m
             if(isolu .eq. 1) then !kappa
-               solu=(rad_wet(i)**3-rad1(i)**3)/(rad_wet(i)**3-(1-kappa(i))*rad1(i)**3)
-               seq = solu * exp(curv)-1.d0
+               solu=(rad(i)**3-rad1(i)**3)/(rad(i)**3-(1-kappa(i))*rad1(i)**3)
+               
             elseif (isolu .eq. 2) then !classical solute term
-               !solu=exp(-vh*m_w/m_s*rho_ccn/rhow*rad1(i)**3/(rad_wet(i)**3-rad1(i)**3)) !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
-               solu = vh*m_w/m_s*rho_ccn/rhow*rad1(i)**3
-               seq =exp(curv-solu/(rad_wet(i)**3-rad1(i)**3))-1.d0
+            solu=exp(-vh*m_w/m_s*rho_ccn*rad1(i)**3/rhow/(rad(i)**3-rad1(i)**3)) !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
             endif !isolu
-               diffvnd2=diffvnd1*1.d0/(rad(i)/(rad(i)+0.104d-6)+diffvnd1/(rad(i)*0.036)*sqrt(2.d0*pi/(Ra*temp)))
-               ka2=ka1*1.d0/(rad(i)/(rad(i)+.216d-6)+ka1/(rad(i)*.7*rhoa*cp)*sqrt(2.d0*pi/(Ra*temp)))
-               ks =1.d0/(rhow*Rv*temp/(esat*diffvnd2)+rhow*Lat/(Ka2*Temp)*(Lat/(Rv*Temp)-1))
+            diffvnd2=diffvnd1*1.d0/(rad(i)/(rad(i)+0.104d-6)+diffvnd1/(rad(i)*0.036)*sqrt(2.d0*pi/(Ra*temp)))
+            ka2=ka1*1.d0/(rad(i)/(rad(i)+.216d-6)+ka1/(rad(i)*.7*rhoa*cp)*sqrt(2.d0*pi/(Ra*temp)))
+            ks =1.d0/(rhow*Rv*temp/(esat*diffvnd2)+rhow*Lat/(Ka2*Temp)*(Lat/(Rv*Temp)-1))
 !!--------------caculate equillibrium supersat.
-
-             !seq=exp(curv-solu/(rad(i)**3-rad1(i)**3))-1.d0
-             !seq=solu*exp(curv)-1.d0
+             seq=solu*exp(curv)-1.d0
              rm0=rad(i)*3.0d0*delt*ks*(sp-seq)+rad(i)**3 !!r^3 
 
-	      if(rm0 .gt. rad1(i)**3) then
-	         dr3(i)=rm0-rad(i)**3
-	         rad(i)=rm0**(1.d0/3.d0)
-	      else
-		      dr3(i)=0.d0
-            rad(i)=rad1(i)
-	      endif
+	         if(rm0 .gt. rad1(i)**3) then
+	            dr3(i)=rm0-rad(i)**3
+	            rad(i)=rm0**(1.d0/3.d0)
+	         else
+		         dr3(i)=0.d0
+               rad(i)=rad1(i)
+	         endif
           enddo 
-             rm=(sum(rad(1:nbinsout)**3*dsd(1:nbinsout))/ndrop)**(1.d0/3.0d0)
+            rm=(sum(rad(1:nbinsout)**3*dsd(1:nbinsout))/ndrop)**(1.d0/3.0d0)
             if(mod(ntmic,int(1./delt)) .eq. 0 .or. ntot .le. 1000) then
               write(16,*) time,up*delt*ntmic-287.6,Sp,cd,rad(5),rad(15),rad(40),pp,temp,281.5-grav/cp*delt*up*ntmic,&
                 thetapp,qvpp,qvs,rm,rhoa,LATOVERCP*DELTAQP/EXNER,deltaqp
