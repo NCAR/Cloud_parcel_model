@@ -13,7 +13,6 @@ program myfirst
       integer :: disp,GCCN
       integer :: iter,ntmic,ntot,i
       real*8 :: ndrop
-!      integer, parameter :: NN =64
       real*8 :: diffvnd1,diffvnd2,ka1,ka2
       real, parameter :: diffvnd = 2.55d-5              ! Coefficient of diffusion of water vapour in air [m**2/s]
       real, parameter :: ka = 2.48d-2                   ! Thermal conductivity of air [J/msK]
@@ -22,7 +21,6 @@ program myfirst
       real,parameter :: grav=9.8
       real,parameter :: visc = 1.78e05!0.16d-4!1.78e-5
       real,parameter :: lat = 2.5e-6!2.477d6!2.5e-6
-      !real,parameter :: up=2.d0
       real,parameter :: ra=287.0
       real,parameter :: cp=1004.0!1005.0
       real,parameter :: rv= 467!461.5!467
@@ -40,59 +38,62 @@ program myfirst
       time_prep=.0
       delt= 1.d-04
       ntot=300./delt
-      name = 'Nsolu2'
+      name = 'simple'
       !setup output files
       OPEN(UNIT=16,FILE=name//'.out',ACCESS='APPEND')!parcel mean variables
       OPEN(UNIT=50,FILE=name//'.dsd',ACCESS='APPEND')!number concentration of each bin
       OPEN(UNIT=51,FILE=name//'.rad',ACCESS='APPEND')!droplet size of each bin
       OPEN(UNIT=60,FILE=name//'.test',ACCESS='APPEND')!output the tested variables
 !--------------initialize aerosols---------
-      disp = 30
-      GCCN = 0 
+      !------initial size distribution------------------------!
       !GCCN=1 insert Giant CCN =2 monotonic seeding r=1micron;!=3 add 3 mode lognormal seeding distribution by Cooper et al. 1997
       !disp=35 Xue10 urban, 30 Xue10 marine, 31 JN17 polluted, 32 NJ17 pristine
-      isolu = 2 !=1 kappa form solute term; =2 classical solute term
-      up = 2.0
+      !disp=2 two initial sizes
+      disp = 2
+      GCCN = 0 
       nbins = 100
       allocate (dsd(nbins),rad(nbins),rad1(nbins),dr3(nbins),rad_wet(nbins),kappa(nbins))
       if (disp .eq. 30 .or. disp .eq. 35 ) then !Xue10  case
 	      rho_ccn=1726.d0!2160.d0!1726.d0 !ammonium sulfate
 	      m_s=132.14d-3!58.44d-3!132.14d-3 
-	      vh = 3.!2.
+	      vh = 2.!2.
       elseif (disp .eq. 31 .or. disp .eq. 32) then !NJ17
 	      rho_ccn=2160.d0 !NaCl
 	      m_s=58.44d-3
 	      vh = 2.
 	      GCCN=1
       endif
-      kappa=vh*m_w/m_s*rho_ccn/rhow
-      print*,'kappa',kappa(1)
-      rm =0.d0!1.d-5
+      isolu = 1 !=1 kappa form solute term; =2 classical solute term
+      if(isolu .eq. 1) kappa=vh*m_w/m_s*rho_ccn/rhow
+      !-------------------------------------------------------!
+      up = 2.0 !updraft velocity
+      rm =0.d0
       rad=rm
       dsd=0.d0
       dr3=0.d0
       call iaerosol(disp,rad,dsd,nbins,ndrop,rho_ccn,rm,nbinsout,GCCN)
-      print*,'nbinsout,GCCN',nbinsout,GCCN
+      print*,'maximum binsize is',nbinsout
+      if (GCCN .ne. 0) print*,'GCCN is on, value = ',GCCN
       write(50,145) 0.,(dsd(i), i=1,nbinsout)
       write(51,145) 0.,(rad(i), i=1,nbinsout)
-      print*,'ndrop',ndrop,sum(dsd(1:nbinsout)),'disp',disp
+      print*,'number of drops ',ndrop
+      print*,'dispersion type ',disp
 !-------------initialize variables------------
-      rad1=rad
+      rad1=rad !ccn radius
       h = 1.d-2 !.01m=1cm
       vol = h**3
       cd=sum(rad(1:nbinsout)**3*dsd(1:nbinsout))*4.d0/3.d0*pi*rhow/vol!condensation
       temp=284.3d0
       p1=93850.0d0
       p0=1.d5
-      sp = -14.39d-2!0.d0!-14.39d-2
+      sp = -14.39d-2
       pp=p1
-      sumrp=0.d0!mark new cdp sumrp=sum(r**2*dr)
+      sumrp=0.d0
       racp= ra/cp
       exner=(pp/p0)**racp
       thetapp=temp/exner
-      cql=4.0d0*pi*rhow/vol !!mark new cql(rhoa*vol)
+      cql=4.0d0*pi*rhow/vol
       esat = 2.53d11*exp(-5.42d3/temp)
-!      ks=1.0/(lat**2*eps*rhow/(Ka*Ra*Temp**2)+Ra*Temp*rhow/(eps*diffvnd*esat))
       ks = 1.d0/(rhow*Rv*temp/(esat*diffvnd)+rhow*Lat/(Ka*Temp)*(Lat/(Rv*Temp)-1))
       qvs = eps*esat/(PP-esat)
       qvpp= (sp+1.d0)*qvs !kg/m^3
@@ -131,7 +132,7 @@ program myfirst
 	      endif
       enddo
       enddo
-      rad=rad_wet
+      rad=rad_wet !droplet radius
 !--------------spin-up------------------
 if(time_prep .ne. 0) then
       upp=0.d0
@@ -204,21 +205,18 @@ endif ! spin_up
          diffvnd1=1.d-5*(0.015*Temp-1.9)
          ka1=1.5d-11*temp**3-4.8d-8*temp**2+1.d-4*temp-3.9d-4
           do i = 1,nbinsout
-!             curv=3.3d-7/(temp*rad(i))!
              curv=2.d0*sigma_sa/(Rv*rhow*temp*rad(i)) !curvature effect coefficient !in m
             if(isolu .eq. 1) then !kappa
                solu=(rad(i)**3-rad1(i)**3)/(rad(i)**3-(1-kappa(i))*rad1(i)**3)
-               
             elseif (isolu .eq. 2) then !classical solute term
-            solu=exp(-vh*m_w/m_s*rho_ccn*rad1(i)**3/rhow/(rad(i)**3-rad1(i)**3)) !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
+               solu=exp(-vh*m_w/m_s*rho_ccn*rad1(i)**3/rhow/(rad(i)**3-rad1(i)**3)) !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
             endif !isolu
             diffvnd2=diffvnd1*1.d0/(rad(i)/(rad(i)+0.104d-6)+diffvnd1/(rad(i)*0.036)*sqrt(2.d0*pi/(Ra*temp)))
             ka2=ka1*1.d0/(rad(i)/(rad(i)+.216d-6)+ka1/(rad(i)*.7*rhoa*cp)*sqrt(2.d0*pi/(Ra*temp)))
             ks =1.d0/(rhow*Rv*temp/(esat*diffvnd2)+rhow*Lat/(Ka2*Temp)*(Lat/(Rv*Temp)-1))
 !!--------------caculate equillibrium supersat.
-             seq=solu*exp(curv)-1.d0
-             rm0=rad(i)*3.0d0*delt*ks*(sp-seq)+rad(i)**3 !!r^3 
-
+            seq=solu*exp(curv)-1.d0
+            rm0=rad(i)*3.0d0*delt*ks*(sp-seq)+rad(i)**3 !!r^3 
 	         if(rm0 .gt. rad1(i)**3) then
 	            dr3(i)=rm0-rad(i)**3
 	            rad(i)=rm0**(1.d0/3.d0)
@@ -245,18 +243,17 @@ endif ! spin_up
 
     SUBROUTINE IAEROSOL(disp,rad,nrad,nbins,ndrop,rho_ccn,rm,nbinsout,GCCN)
 !---- This subroutine determines the initial position and size of all droplets
-!!----- for droplets locations & ID# & random # generator
   implicit none
 
   ! --- argument ---
   integer :: nbins,nbinsout,GCCN
   real(8), dimension(nbins) :: rad,nrad
-  integer :: disp,iinit,ifinal
+  integer :: disp
   real(8) :: rm,ndrop
 
   ! --- local --
 
-  integer :: i
+  integer :: i,iinit,ifinal
   real(8), allocatable, dimension(:) :: wid,dNdlogr,dNdr
   real(8) :: r1,n1,logsig,rmin,rmax
   real :: rho_ccn
@@ -303,26 +300,26 @@ wid =0.d0
         logsig=.396d0
         logsig=log(10.d0)*logsig
         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
-	if (GCCN .eq. 3) then !add 3 mode lognormal seeding distribution by Cooper et al. 1997
-	   !mode 1
-	   n1=100.d0
-	   r1=.15d-6
-	   logsig=.2d0
-	   logsig=log(10.d0)*logsig
-           dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
-	   !mode 2
-           n1=100.d0*1.7d-4
-           r1=.5d-6
-           logsig=.4d0
-           logsig=log(10.d0)*logsig
-           dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
-	   !mode 3
-           n1=100.d0*3.d-7
-           r1=5.d-6
-           logsig=.6d0
-           logsig=log(10.d0)*logsig
-           dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
-	endif!GCCN=3
+	      if (GCCN .eq. 3) then !add 3 mode lognormal seeding distribution by Cooper et al. 1997
+	      !mode 1
+	         n1=100.d0
+	         r1=.15d-6
+	         logsig=.2d0
+	         logsig=log(10.d0)*logsig
+            dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+	      !mode 2
+            n1=100.d0*1.7d-4
+            r1=.5d-6
+            logsig=.4d0
+            logsig=log(10.d0)*logsig
+            dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+	      !mode 3
+            n1=100.d0*3.d-7
+            r1=5.d-6
+            logsig=.6d0
+            logsig=log(10.d0)*logsig
+            dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+	      endif!GCCN=3
      enddo
      do i=1,nbinsout
         rm=rm+rad(i)**3*dNdlogr(i)*wid(i)/rad(i)
@@ -386,7 +383,6 @@ wid =0.d0
         nrad(1:nbinsout) = dNdr(1:nbinsout)*wid(1:nbinsout)
         ndrop=sum(nrad(1:nbinsout))
         rm = sum(rad(1:nbinsout)**3*nrad(1:nbinsout))
-     print*,'radmin, radmax',rmin,rad(nbinsout),'ndrop=',ndrop!mark
   elseif (disp .eq. 35) then !Lulin 2010 rural
      rmin = 6.d-9
      rad(1)=rmin
@@ -450,50 +446,8 @@ wid =0.d0
           rm=rm+rad(i)**3*dNdlogr(i)*10.0d0**(floor(log10(rad(i))))/rad(i)/log(10.d0)
           ndrop=ndrop+dNdlogr(i)*10.0d0**(floor(log10(rad(i))))/rad(i)/log(10.d0)
      enddo
-
-  elseif (disp .eq. 37) then !Jaenicke1988 maritime case !6d-7~5d-4cm
-     !r<1d-5
-     rmin = 6.d-7
-     rmax = 5.d-4
-     logrmin=10.d0**floor(log10(rmin))
-     logrmax=10.d0**floor(log10(rmax))
-     iinit=Nint(rmin/logrmin)
-     ifinal=(floor(log10(rmax))-floor(log10(rmin)))*9+floor(rmax/logrmax)
-     r1=0.
-     n1=0.
-     rm=0.
-     logsig=0.
-     do i=iinit,ifinal
-          rad(i) = real(mod(i,9))*10.d0**(-7+i/9)
-          if (mod(i,9) .eq. 0) then
-             rad(i) = 9.0d0*10.d0**(-7+i/9-1)
-          endif
-          if(rad(i) .lt. 1.d-5) then
-             n1 = 1.33d2
-             r1 = 3.9d-7
-             logsig = .657d0
-             dNdlogr(i) = n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log10(rad(i))-log10(r1))/(sqrt(2.0d0)*logsig))**2)
-          elseif(rad(i) .lt. 1.d-4) then
-             n1 = 6.66d1
-             r1 = 1.33d-5
-             logsig = .21d0
-             dNdlogr(i) = n1/(sqrt(2.0*pi) *logsig) * exp(-((log10(rad(i))-log10(r1))/(sqrt(2.0d0)*logsig))**2)
-             r1 = 2.9d-5
-             logsig = .396d0
-             dNdlogr(i) = dNdlogr(i) +n1/(sqrt(2.0*pi) *logsig) * exp(-((log10(rad(i))-log10(r1))/(sqrt(2.0d0)*logsig))**2)
-          else !r>1.d-4
-             n1=2.84d-1
-             r1=2.0d-4
-             logsig = .5d0
-             dNdlogr(i) = n1/(sqrt(2.0*pi) *logsig) * exp(-((log10(rad(i))-log10(r1))/(sqrt(2.0d0)*logsig))**2)
-          endif
-          rm=rm+rad(i)**3*dNdlogr(i)*10.0d0**(floor(log10(rad(i))))/rad(i)/log(10.d0)
-          ndrop=ndrop+dNdlogr(i)*10.0d0**(floor(log10(rad(i))))/rad(i)/log(10.d0)
-
-     enddo
-
   endif ! disp
-  if(GCCN .eq. 1) then
+  if(GCCN .eq. 1) then !JN17 GCCN
      do i=1,42
         rad(nbinsout+i)=.8d-6+0.2d-6*real(i-1)
      enddo
@@ -540,15 +494,14 @@ wid =0.d0
         nrad(nbinsout+41)=.0d0
         nrad(nbinsout+42)=.4542d-5!9micron
         nbinsout=nbinsout+42
-  elseif (GCCN==2) then
+  elseif (GCCN==2) then !some simple one size GCCN
         rad(nbinsout+1)=1.d-6
         nrad(nbinsout+1)=10
         nbinsout=nbinsout+1
   endif!GCCN
-  ndrop=sum(nrad(1:nbinsout))
-  write(50,145) 0.,(dNdlogr(i), i=1,nbinsout)
+  ndrop=sum(nrad(1:nbinsout)) !total number
+  write(50,145) 0.,(dNdlogr(i), i=1,nbinsout) !initial dry size distribution
   rm = (sum(rad(1:nbinsout)**3*nrad(1:nbinsout))/ndrop)**(1.d0/3.d0)
-
   print*,"rm", rm,ndrop,10.d0**(floor(log10(rad(7))))
 deallocate(wid,dNdlogr,dNdr)
 
