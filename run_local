@@ -1,0 +1,5 @@
+#!/bin/bash
+rm eXparcel simple.* 
+#test.out
+gfortran-mp-8 activation.F90 -o eXparcel
+./eXparcel > stdout
