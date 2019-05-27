@@ -82,7 +82,7 @@ program Parcel
       p1=93850.0d0         !initial pressure
       nbins = 100
       allocate (dsd(nbins),rad(nbins),rad_ccn(nbins),dr3(nbins),rad_wet(nbins),kappa(nbins))
-      if (disp .le. 2) then !bi-disperse
+      if (disp .eq. 2) then ! mono or bi-disperse
 	      rho_ccn=1726.d0!ammonium sulfate
 	      m_s=132.14d-3
 	      vh = 3.!2.
@@ -149,7 +149,6 @@ program Parcel
          elseif (isolu .eq. 2) then !classical solute term
             solu=exp(-vh*m_w/m_s*rho_ccn/rhow*rad_ccn(i)**3/(rad_wet(i)**3-rad_ccn(i)**3)) !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
          endif !isolu
-
          seq = solu * exp(curv)-1.d0           
          if(seq .gt. sp .and. rad_wet(i) .gt. rad_ccn(i)) then
 	         rad_wet(i)=rad_wet(i)-rad_ccn(i)*1.d-6
@@ -213,7 +212,7 @@ endif ! spin_up
 lwc=sum(4.d0/3.d0*pi*rad(1:nbinsout)**3*rhow*dsd(1:nbinsout))
 write(16,*) 0.d0-time_prep,up*delt*ntmic-287.6,Sp,wc,rad(15),rad(40),pp,temperature,281.5-grav/cp*delt*up,& !8
             thetapp,qvpp,qvs,rm,rhoa,LATOVERCP*DELTAQP/EXNER,deltaqp
-!--------------evolumeution------------------
+!--------------evolution------------------
       do 100 ntmic=1,ntot
          time = ntmic*delt
          pp=rhoa*Ra*(1+m_w/29.d-3*qvpp)*temperature
@@ -237,6 +236,8 @@ write(16,*) 0.d0-time_prep,up*delt*ntmic-287.6,Sp,wc,rad(15),rad(40),pp,temperat
                solu=(rad(i)**3-rad_ccn(i)**3)/(rad(i)**3-(1-kappa(i))*rad_ccn(i)**3)
             elseif (isolu .eq. 2) then !classical solute term
                solu=exp(-vh*m_w/m_s*rho_ccn*rad_ccn(i)**3/rhow/(rad(i)**3-rad_ccn(i)**3)) !solute effect coefficient ms=132.14 for ammonium sulfate !m^3
+            elseif (isolu .eq. 0) then !no solute effect
+               solu=1.d0
             endif !isolu
             diffvnd2=diffvnd1*1.d0/(rad(i)/(rad(i)+0.104d-6)+diffvnd1/(rad(i)*0.036)*sqrt(2.d0*pi/(Ra*temperature)))
             ka2=ka1*1.d0/(rad(i)/(rad(i)+.216d-6)+ka1/(rad(i)*.7*rhoa*cp)*sqrt(2.d0*pi/(Ra*temperature)))
@@ -251,6 +252,7 @@ write(16,*) 0.d0-time_prep,up*delt*ntmic-287.6,Sp,wc,rad(15),rad(40),pp,temperat
 		         dr3(i)=0.d0
                rad(i)=rad_ccn(i)
 	         endif
+            print*,'rad',rad(1),'solu',solu,'seq',seq,'supersat=',sp-seq,'s_env',sp
           enddo 
             rm=(sum(rad(1:nbinsout)**3*dsd(1:nbinsout))/ndrop)**(1.d0/3.0d0)
             if(mod(ntmic,int(1./delt)) .eq. 0 .or. ntot .le. 1000) then
@@ -303,7 +305,7 @@ wid =0.d0
   if (disp .eq. 1) then !mono disperse
       nbinsout=1
       rad(nbinsout)=1.d-7
-      ndrop=100
+      ndrop=11.2!100 ! number concentration percc
       nrad=ndrop
   elseif (disp .eq. 30) then !lulin 2010 maritime case
      nbinsout=39
