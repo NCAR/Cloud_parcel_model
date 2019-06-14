@@ -50,7 +50,7 @@ debug:
 
 
 clean:
-	rm -f *.o *.mod
+	rm -f *.o *.mod #IUGG.* stdout
 #.PHONY: debug default clean
 
 $(PRG_OBJ) : $(MOD_OBJS)

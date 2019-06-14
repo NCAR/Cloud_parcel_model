@@ -40,7 +40,7 @@ program Parcel
 
       time_prep=.0
       delt= 1.d-04 
-      ntot=3./delt
+      ntot=300./delt
       name = 'IUGG'
       !------------------------------setup output files-------------------------------!!
       OPEN(UNIT=16,FILE=name//'.out',ACCESS='APPEND')!parcel mean variables

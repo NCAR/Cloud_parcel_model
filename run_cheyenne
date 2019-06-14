@@ -24,6 +24,6 @@
 #mpirun -n 32 ./cloud_turb > stdout_cheyenne
 #export MPI_SHEPHERD=true 
 #mpiexec_mpt peak_memusage.exe ./cloud_turb > stdout_cheyenne
-time ./eXparcel >stdout
+time ./cloud_parcel >stdout
 #mpirun -n $[PBS_NUM_NODES*ppn] -npernode $ppn $myExe
 #mpiexec -n $[PBS_NUM_NODES*ppn] -npernode $ppn  $myExe > stdout

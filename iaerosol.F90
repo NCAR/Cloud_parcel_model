@@ -32,7 +32,7 @@ wid =0.d0
   elseif (disp .eq. 20) then !IUGG monodisperse case
      nbinsout = 1
      rad(nbinsout)=1.d-7
-     nrad(nbinsout)=100 !number per cc
+     nrad(nbinsout)=1000 !number per cc
   elseif (disp .eq. 30) then !lulin 2010 maritime case
      nbinsout=39
      rmin = 6.d-9
@@ -246,7 +246,7 @@ wid =0.d0
   elseif (GCCN==2) then !some simple one size GCCN
          if(disp .eq. 20) then
             rad(nbinsout+1)=5.d-6
-            nrad(nbinsout+1)=1
+            nrad(nbinsout+1)=10
          else
             rad(nbinsout+1)=1.d-6
             nrad(nbinsout+1)=10
