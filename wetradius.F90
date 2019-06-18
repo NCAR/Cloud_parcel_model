@@ -43,5 +43,4 @@ SUBROUTINE wetradius(isolu,sp0,nrad,rad_ccn,rad_wet,kappa)
 200   enddo !dowhile
 
 100   enddo !drop id
-   print*, 'get wet radius'
 end SUBROUTINE wetradius

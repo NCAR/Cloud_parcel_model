@@ -1,0 +1,34 @@
+input variables for initial conditions
+filenames to output
+IUGG
+total time (s); spin up time
+300.d0 0.
+particle distribution parameter; GCCN parameter
+35 2
+updraft speed (m/s)
+2.0
+initial supersaturation
+-14.39d-2
+solute term option: 1 use hygroscopicity; 2 classical solute term
+1
+initial temperature (K)
+283.3d0
+initial pressure (Pa)
+93850.0d0
+debug mode: 1 switch on, print out variables; 0 turn off
+0
+time preparation for spin up(s)
+
+#particle distribution parameter disp:
+20: IUGG monodisperse case (one size background one size seed)
+2: mono or bi disperse
+30: lulin2010 maritime case
+35: lulin polluted case
+31: Jensen&nugent 2017 modified polluted (has error)
+32: Jensen&Nugent 2017 clean case
+39: Jaenicke1988 case
+
+#GCCN:
+GCCN=2 monodisperse seeding
+1: JN17 GCCN
+3: lognormal seeding particle distribution Cooper 1997 seed

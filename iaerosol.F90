@@ -60,26 +60,6 @@ wid =0.d0
         logsig=.396d0
         logsig=log(10.d0)*logsig
         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
-	      if (GCCN .eq. 3) then !add 3 mode lognormal seeding distribution by Cooper et al. 1997
-	      !mode 1
-	         n1=100.d0
-	         r1=.15d-6
-	         logsig=.2d0
-	         logsig=log(10.d0)*logsig
-            dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
-	      !mode 2
-            n1=100.d0*1.7d-4
-            r1=.5d-6
-            logsig=.4d0
-            logsig=log(10.d0)*logsig
-            dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
-	      !mode 3
-            n1=100.d0*3.d-7
-            r1=5.d-6
-            logsig=.6d0
-            logsig=log(10.d0)*logsig
-            dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
-	      endif!GCCN=3
      enddo
      do i=1,nbinsout 
         dNdr(i)=dNdlogr(i)/rad(i)
@@ -139,10 +119,11 @@ wid =0.d0
         nrad(1:nbinsout) = dNdr(1:nbinsout)*wid(1:nbinsout)
   elseif (disp .eq. 35) then !Lulin 2010 rural
      rmin = 6.d-9
+     nbinsout=35
      rad(1)=rmin
      bin_factor=2.d0 !mass increment
      wid(1)=rad(1)*(bin_factor**(1.d0/3.0d0)-1)
-     do i=2,35
+     do i=2,nbinsout
         rad_power=real(i-1)/3.0
         rad(i)=rad(1)*bin_factor**rad_power
         wid(i)=rad(i)-rad(i-1)
@@ -162,7 +143,7 @@ wid =0.d0
         logsig=log(10.d0)*logsig
         dNdlogr(i) = dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
      enddo
-     do i=1,35
+     do i=1,nbinsout
         dNdr(i)=dNdlogr(i)/rad(i)
         nrad(i)=dNdr(i)*wid(i)
      enddo
@@ -252,6 +233,28 @@ wid =0.d0
             nrad(nbinsout+1)=10
          endif
             nbinsout=nbinsout+1
+  elseif (GCCN .eq. 3) then !add 3 mode lognormal seeding distribution by Cooper et al. 1997
+	   !mode 1
+	   n1=100.d0
+	   r1=.15d-6
+	   logsig=.2d0
+	   logsig=log(10.d0)*logsig
+      dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+	   !mode 2
+      n1=100.d0*1.7d-4
+      r1=.5d-6
+      logsig=.4d0
+      logsig=log(10.d0)*logsig
+      dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+      !mode 3
+      n1=100.d0*3.d-7
+      r1=5.d-6
+      logsig=.6d0
+      logsig=log(10.d0)*logsig
+      dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+
+      dNdr(1:nbinsout)=dNdr(1:nbinsout)+dNdlogr(1:nbinsout)/rad(1:nbinsout)
+      nrad(1:nbinsout)=nrad(1:nbinsout)+dNdr(1:nbinsout)*wid(1:nbinsout)
   endif!GCCN
   ndrop=sum(nrad(1:nbinsout)) !total number
   write(50,145) 0.,(dNdlogr(i), i=1,nbinsout) !initial dry size distribution

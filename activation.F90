@@ -27,26 +27,48 @@ program Parcel
       real(dp)            :: exner,racp,p1,PP,sumrp
       real(dp)            :: rm,rm0,curv,solu
       real(dp)            :: deltaqp,lwc,cql,cdp
-      character*4       :: name
+      character*10        :: name
+      character*100       :: str_statement
       real(dp), allocatable, dimension(:) :: rad,rad_ccn,dsd,dr3,rad_wet,kappa
       integer           :: iinit,ifinal, isolu
       integer           :: GCCN
       integer           :: iter,ntmic,ntot,i
-      real(dp)            :: ndrop       
+      real(dp)          :: ndrop
+      real              :: time_tot
       real,parameter :: upp=0.0 !spin-up updraft
       real :: up !updraft 
 196   format(1x,6(f16.8,2x))  
 145   format(1x,100(e16.8,2x))
-
-      time_prep=.0
+      open(90,file='parameter.dat',status='unknown')
+      read(90,*) str_statement
+      read(90,*) str_statement
+      read(90,*) name
+      read(90,*) str_statement
+      read(90,*) time_tot,time_prep
+      read(90,*) str_statement
+      read(90,*) disp,GCCN
+      read(90,*) str_statement
+      read(90,*) up
+      read(90,*) str_statement
+      read(90,*) sp
+      read(90,*) str_statement
+      read(90,*) isolu
+      read(90,*) str_statement
+      read(90,*) temperature
+      read(90,*) str_statement
+      read(90,*) p1
+      read(90,*) str_statement
+      read(90,*) idebug
+      close(unit=90)
+!      time_prep=.0
       delt= 1.d-04 
-      ntot=300./delt
-      name = 'IUGG'
+      ntot=time_tot/delt
+!      name = 'IUGG'
       !------------------------------setup output files-------------------------------!!
-      OPEN(UNIT=16,FILE=name//'.out',ACCESS='APPEND')!parcel mean variables
-      OPEN(UNIT=50,FILE=name//'.dsd',ACCESS='APPEND')!number concentration of each bin
-      OPEN(UNIT=51,FILE=name//'.rad',ACCESS='APPEND')!droplet size of each bin
-      OPEN(UNIT=60,FILE=name//'.test',ACCESS='APPEND')!output the tested variables
+      OPEN(UNIT=16,FILE=trim(name)//'.out',ACCESS='APPEND')!parcel mean variables
+      OPEN(UNIT=50,FILE=trim(name)//'.dsd',ACCESS='APPEND')!number concentration of each bin
+      OPEN(UNIT=51,FILE=trim(name)//'.rad',ACCESS='APPEND')!droplet size of each bin
+      OPEN(UNIT=60,FILE=trim(name)//'.test',ACCESS='APPEND')!output the tested variables
       !--------------------------------------initialize aerosols----------------------!!
       !------------------------------initial size distribution------------------------!!
       !////GCCN=1 insert Jensen & Nugent 2017 Giant CCN           ////////////////////!!
@@ -55,16 +77,24 @@ program Parcel
       !///disp=35 Xue10 urban, 30 Xue10 marine, 31 JN17 polluted, 32 NJ17 pristine////!!
       !////disp=1 monotonic initial sizes ////////////////////////////////////////////!!
       !-------------------------------------------------------------------------------!!
-      idebug = 0           !=1 switch on debug mode: print out variables
-      disp = 20 
-      GCCN = 0 
-      isolu = 1            !=1 kappa form solute term; =2 classical solute term
-      up = 2.0             !  updraft velocity
-      sp = -14.39d-2       !supersaturation
-      temperature=284.3d0  !initial temperature
-      p1=93850.0d0         !initial pressure
+!      idebug = 0           !=1 switch on debug mode: print out variables
+!      disp = 20 
+!      GCCN = 0 
+!      isolu = 1            !=1 kappa form solute term; =2 classical solute term
+!      up = 2.0             !  updraft velocity
+!      sp = -14.39d-2       !supersaturation
+!      temperature=284.3d0  !initial temperature
+!      p1=93850.0d0         !initial pressure
       nbins = 100
       allocate (dsd(nbins),rad(nbins),rad_ccn(nbins),dr3(nbins),rad_wet(nbins),kappa(nbins))
+      rm =0.d0
+      rad=rm
+      dsd=0.d0
+      dr3=0.d0
+      call iaerosol(rad_ccn,dsd,ndrop,rm,GCCN)
+      print*,'radius',rad_ccn(1:2)
+      ! to get dry radius rad_ccn
+      print*,'maximum binsize is',nbinsout
       if (disp .eq. 2) then ! mono or bi-disperse
 	      rho_ccn=1726.d0!ammonium sulfate
 	      m_s=132.14d-3
@@ -87,14 +117,6 @@ program Parcel
          GCCN  =  2  !monodisperse GCCN
       endif
       !-------------------------------------------------------!
-      rm =0.d0
-      rad=rm
-      dsd=0.d0
-      dr3=0.d0
-      call iaerosol(rad_ccn,dsd,ndrop,rm,GCCN)
-      print*,'radius',rad_ccn(1:2)
-      ! to get dry radius rad_ccn
-      print*,'maximum binsize is',nbinsout
       if (GCCN .ne. 0) print*,'GCCN is on, value = ',GCCN
       write(50,145) 0.,(dsd(i), i=1,nbinsout)
       write(51,145) 0.,(rad(i), i=1,nbinsout)
@@ -122,7 +144,7 @@ program Parcel
 !--------------start with r_wet=1.5*r_d-----------------------!
    if (idebug .eq. 1) print*,'dry radius',rad_ccn(1:2)
    call wetradius(isolu,sp,dsd,rad_ccn,rad_wet,kappa)
-
+   print*, 'get wet radius'
       rad=rad_wet !droplet radius
       if (idebug .eq. 1) print*,'dry & wet radius',rad_ccn(1:2),rad(1:2)
 !--------------spin-up------------------
@@ -180,6 +202,7 @@ lwc=sum(4.d0/3.d0*pi*rad(1:nbinsout)**3*rhow*dsd(1:nbinsout))*1e6
 write(16,*) 0.d0-time_prep,0.d0,Sp,lwc,rad(1),rad(2),pp,temperature, & !8
             thetapp,qvpp,qvs,rm,rhoa,LATOVERCP*DELTAQP/EXNER,deltaqp
 !--------------evolution------------------
+print*,'evolution of droplet size starting with rm=',rm
       do 100 ntmic=1,ntot
          time = ntmic*delt
          pp=rhoa*Ra*(1+m_w/29.d-3*qvpp)*temperature
