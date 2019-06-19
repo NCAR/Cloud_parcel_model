@@ -4,7 +4,7 @@ IUGG
 total time (s); spin up time
 300.d0 0.
 particle distribution parameter; GCCN parameter
-35 2
+20 2
 updraft speed (m/s)
 2.0
 initial supersaturation
@@ -16,8 +16,7 @@ initial temperature (K)
 initial pressure (Pa)
 93850.0d0
 debug mode: 1 switch on, print out variables; 0 turn off
-0
-time preparation for spin up(s)
+1
 
 #particle distribution parameter disp:
 20: IUGG monodisperse case (one size background one size seed)

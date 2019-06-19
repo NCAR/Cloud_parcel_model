@@ -32,7 +32,7 @@ wid =0.d0
   elseif (disp .eq. 20) then !IUGG monodisperse case
      nbinsout = 1
      rad(nbinsout)=1.d-7
-     nrad(nbinsout)=1000 !number per cc
+     nrad(nbinsout)=100 !number per cc
   elseif (disp .eq. 30) then !lulin 2010 maritime case
      nbinsout=39
      rmin = 6.d-9
@@ -225,14 +225,9 @@ wid =0.d0
         nrad(nbinsout+42)=.4542d-5!9micron
         nbinsout=nbinsout+42
   elseif (GCCN==2) then !some simple one size GCCN
-         if(disp .eq. 20) then
-            rad(nbinsout+1)=5.d-6
-            nrad(nbinsout+1)=10
-         else
-            rad(nbinsout+1)=1.d-6
-            nrad(nbinsout+1)=10
-         endif
-            nbinsout=nbinsout+1
+      rad(nbinsout+1)=1.d-6
+      nrad(nbinsout+1)=1
+      nbinsout=nbinsout+1
   elseif (GCCN .eq. 3) then !add 3 mode lognormal seeding distribution by Cooper et al. 1997
 	   !mode 1
 	   n1=100.d0
@@ -256,7 +251,7 @@ wid =0.d0
       dNdr(1:nbinsout)=dNdr(1:nbinsout)+dNdlogr(1:nbinsout)/rad(1:nbinsout)
       nrad(1:nbinsout)=nrad(1:nbinsout)+dNdr(1:nbinsout)*wid(1:nbinsout)
   endif!GCCN
-  ndrop=sum(nrad(1:nbinsout)) !total number
+  ndrop=sum(nrad(1:nbinsout)) !total number 
   write(50,145) 0.,(dNdlogr(i), i=1,nbinsout) !initial dry size distribution
   rm = (sum(rad(1:nbinsout)**3*nrad(1:nbinsout))/ndrop)**(1.d0/3.d0)
   if (idebug .eq. 1) print*,"rm", rm, 'nbins',nbins,'nbinsout',nbinsout,'ndrop',ndrop

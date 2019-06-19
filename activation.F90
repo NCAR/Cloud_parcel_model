@@ -60,6 +60,7 @@ program Parcel
       read(90,*) str_statement
       read(90,*) idebug
       close(unit=90)
+!      print*,'idebug',idebug,'p1',p1,'up',up,'disp',disp,'GCCN',GCCN
 !      time_prep=.0
       delt= 1.d-04 
       ntot=time_tot/delt
@@ -77,14 +78,6 @@ program Parcel
       !///disp=35 Xue10 urban, 30 Xue10 marine, 31 JN17 polluted, 32 NJ17 pristine////!!
       !////disp=1 monotonic initial sizes ////////////////////////////////////////////!!
       !-------------------------------------------------------------------------------!!
-!      idebug = 0           !=1 switch on debug mode: print out variables
-!      disp = 20 
-!      GCCN = 0 
-!      isolu = 1            !=1 kappa form solute term; =2 classical solute term
-!      up = 2.0             !  updraft velocity
-!      sp = -14.39d-2       !supersaturation
-!      temperature=284.3d0  !initial temperature
-!      p1=93850.0d0         !initial pressure
       nbins = 100
       allocate (dsd(nbins),rad(nbins),rad_ccn(nbins),dr3(nbins),rad_wet(nbins),kappa(nbins))
       rm =0.d0
@@ -112,14 +105,14 @@ program Parcel
 	      GCCN=1
          kappa(1:nbinsout)=vh*m_w/m_s*rho_ccn/rhow
       elseif (disp .eq. 20) then !IUGG case mono backgound + GCCN
-         kappa(1) =  0.2d0
+         kappa(1) =  0.3d0
          kappa(2) =  1.2d0
          GCCN  =  2  !monodisperse GCCN
       endif
       !-------------------------------------------------------!
       if (GCCN .ne. 0) print*,'GCCN is on, value = ',GCCN
       write(50,145) 0.,(dsd(i), i=1,nbinsout)
-      write(51,145) 0.,(rad(i), i=1,nbinsout)
+      write(51,145) 0.,(rad_ccn(i), i=1,nbinsout)
       print*,'number of drops ',ndrop
       print*,'dispersion type ',disp
 !-------------initialize variables------------
