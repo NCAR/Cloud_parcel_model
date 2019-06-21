@@ -22,18 +22,18 @@ program Parcel
         !///////////////////////////////////////////////////////////////////////////////!!
       use parameter_mod
       implicit none
-      real(dp)            :: qvpp,qvs,esat,temp_old,time,delt,time_prep
-      real(dp)            :: sp,volume,h,thetapp,seq,seq1,seq2
-      real(dp)            :: exner,racp,p1,PP,sumrp
-      real(dp)            :: rm,rm0,curv,solu
-      real(dp)            :: deltaqp,lwc,cql,cdp
+      real*8            :: qvpp,qvs,esat,temp_old,time,delt,time_prep
+      real*8            :: sp,volume,h,thetapp,seq,seq1,seq2
+      real*8            :: exner,racp,p1,PP,sumrp
+      real*8            :: rm,rm0,curv,solu
+      real*8            :: deltaqp,lwc,cql,cdp
       character*10        :: name
       character*100       :: str_statement
-      real(dp), allocatable, dimension(:) :: rad,rad_ccn,dsd,dr3,rad_wet,kappa
+      real*8, allocatable, dimension(:) :: rad,rad_ccn,dsd,dr3,rad_wet,kappa
       integer           :: iinit,ifinal, isolu
       integer           :: GCCN
       integer           :: iter,ntmic,ntot,i
-      real(dp)          :: ndrop
+      real*8            :: ndrop
       real              :: time_tot
       real,parameter :: upp=0.0 !spin-up updraft
       real :: up !updraft 
@@ -153,7 +153,7 @@ if(time_prep .ne. 0) then
          esat=2.53d11*exp(-5.42d3/temperature)
          qvs = eps*esat/(PP-esat)
          rhoa= rhoa*(-grav*upp/(Ra*temperature)*delt/2.d0-(temperature-temp_old)/temperature)+rhoa
-          thetapp=thetapp+latovercp*deltaqp/exner
+         thetapp=thetapp+latovercp*deltaqp/exner
           qvpp    = qvpp - deltaqp
           sp = qvpp/qvs-1.d0 !mark new sp
           rm=0.d0
@@ -198,7 +198,7 @@ write(16,*) 0.d0-time_prep,0.d0,Sp,lwc,rad(1),rad(2),pp,temperature, & !8
 print*,'evolution of droplet size starting with rm=',rm
       do 100 ntmic=1,ntot
          time = ntmic*delt
-         pp=rhoa*Ra*(1+m_w/29.d-3*qvpp)*temperature
+         pp=rhoa*Ra*(1+m_w/29.d-3*qvpp)*temperature!pp-rhoa*grav*delt*up!
          exner = (PP/P0)**RACP         
          sumrp=sum(dr3(1:nbinsout)*dsd(1:nbinsout))/3.d0
 	      deltaqp=cql*sumrp!cdp condensation

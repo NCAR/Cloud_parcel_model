@@ -4,13 +4,13 @@
      implicit none
   ! --- argument ---
      integer :: GCCN
-     real(dp), dimension(nbins) :: rad,nrad
-     real(dp) :: rm,ndrop
+     real*8, dimension(nbins) :: rad,nrad
+     real*8 :: rm,ndrop,temp1,temp2
   ! --- local --
      integer :: i,iinit,ifinal
-     real(dp), allocatable, dimension(:) :: wid,dNdlogr,dNdr
-     real(dp) :: r1,n1,logsig,rmin,rmax
-     real(dp) :: logrmin,logrmax,rad_power,bin_factor
+     real*8, allocatable, dimension(:) :: wid,dNdlogr,dNdr
+     real*8 :: r1,n1,logsig,rmin,rmax
+     real*8 :: logrmin,logrmax,rad_power,bin_factor
  145 format(1x,100(e16.8,2x))
  111 format(a20,i3)
 
@@ -23,6 +23,10 @@ allocate(wid(nbins),dNdlogr(nbins),dNdr(nbins))
 dNdlogr = 0.0
 dNdr = 0.0d0
 wid =0.d0
+open(80,file='parameter.dat',status='unknown')
+do i = 1,20
+   read(80,*)
+enddo
 !size dispersion
   if (disp .eq. 1) then !mono disperse
       nbinsout=1
@@ -31,8 +35,9 @@ wid =0.d0
       nrad=ndrop
   elseif (disp .eq. 20) then !IUGG monodisperse case
      nbinsout = 1
-     rad(nbinsout)=1.d-7
-     nrad(nbinsout)=100 !number per cc
+     read(80,*) temp1,temp2
+     nrad(nbinsout)=temp1
+     rad(nbinsout)=temp2!number per cc
   elseif (disp .eq. 30) then !lulin 2010 maritime case
      nbinsout=39
      rmin = 6.d-9
@@ -225,9 +230,11 @@ wid =0.d0
         nrad(nbinsout+42)=.4542d-5!9micron
         nbinsout=nbinsout+42
   elseif (GCCN==2) then !some simple one size GCCN
-      rad(nbinsout+1)=1.d-6
-      nrad(nbinsout+1)=1
-      nbinsout=nbinsout+1
+     read(80,*)
+     read(80,*) temp1,temp2
+     nrad(nbinsout+1)=temp1
+     rad(nbinsout+1)=temp2!number per cc
+     nbinsout=nbinsout+1
   elseif (GCCN .eq. 3) then !add 3 mode lognormal seeding distribution by Cooper et al. 1997
 	   !mode 1
 	   n1=100.d0
@@ -252,11 +259,10 @@ wid =0.d0
       nrad(1:nbinsout)=nrad(1:nbinsout)+dNdr(1:nbinsout)*wid(1:nbinsout)
   endif!GCCN
   ndrop=sum(nrad(1:nbinsout)) !total number 
-  write(50,145) 0.,(dNdlogr(i), i=1,nbinsout) !initial dry size distribution
   rm = (sum(rad(1:nbinsout)**3*nrad(1:nbinsout))/ndrop)**(1.d0/3.d0)
   if (idebug .eq. 1) print*,"rm", rm, 'nbins',nbins,'nbinsout',nbinsout,'ndrop',ndrop
 deallocate(wid,dNdlogr,dNdr)
-
+close(unit=80)
  299   format(1x,(e12.6),3(f8.6))
  199   format(1x,3(f8.6))
 

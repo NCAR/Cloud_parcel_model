@@ -1,4 +1,4 @@
-input variables for initial conditions
+#input variables for initial conditions in activation.F90
 filenames to output
 IUGG
 total time (s); spin up time
@@ -16,7 +16,11 @@ initial temperature (K)
 initial pressure (Pa)
 93850.0d0
 debug mode: 1 switch on, print out variables; 0 turn off
-1
+0
+#set up params in iaerosol.F90 background aerosol number & size
+1.d2 1.d-7
+Seeded number & size
+1.d0 7.d-6
 
 #particle distribution parameter disp:
 20: IUGG monodisperse case (one size background one size seed)
