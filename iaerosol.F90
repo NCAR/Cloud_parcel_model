@@ -5,7 +5,7 @@
   ! --- argument ---
      integer :: GCCN
      real*8, dimension(nbins) :: rad,nrad
-     real*8 :: rm,ndrop,temp1,temp2
+     real*8 :: rm,ndrop,ccn_ndrop,ccn_rad,gccn_ndrop,gccn_rad
   ! --- local --
      integer :: i,iinit,ifinal
      real*8, allocatable, dimension(:) :: wid,dNdlogr,dNdr
@@ -27,6 +27,9 @@ open(80,file='parameter.dat',status='unknown')
 do i = 1,20
    read(80,*)
 enddo
+read(80,*) ccn_ndrop,ccn_rad
+read(80,*)
+read(80,*) gccn_ndrop,gccn_rad
 !size dispersion
   if (disp .eq. 1) then !mono disperse
       nbinsout=1
@@ -35,12 +38,13 @@ enddo
       nrad=ndrop
   elseif (disp .eq. 20) then !IUGG monodisperse case
      nbinsout = 1
-     read(80,*) temp1,temp2
-     nrad(nbinsout)=temp1
-     rad(nbinsout)=temp2!number per cc
+
+     nrad(nbinsout)=ccn_ndrop
+     rad(nbinsout)=ccn_rad!number per cc
+
   elseif (disp .eq. 30) then !lulin 2010 maritime case
-     nbinsout=39
-     rmin = 6.d-9
+     nbinsout=50
+     rmin = 1.d-9
      rad(1)=rmin
      bin_factor=2.d0
      wid(1)=rad(1)*(bin_factor**(1.d0/3.d0)-1.d0)
@@ -95,8 +99,6 @@ enddo
      enddo
      dNdr(1:nbinsout)=dNdlogr(1:nbinsout)/rad(1:nbinsout)
      nrad(1:nbinsout)=dNdr(1:nbinsout)*wid(1:nbinsout)
-
-
   elseif (disp .eq. 32) then !Jensen&Nugent 2017 pristine case
      nbinsout=39
      rmin = 1.d-8
@@ -122,16 +124,51 @@ enddo
      enddo
         dNdr(1:nbinsout) = dNdlogr(1:nbinsout)/rad(1:nbinsout)
         nrad(1:nbinsout) = dNdr(1:nbinsout)*wid(1:nbinsout)
+  elseif (disp .eq. 34) then !modified from Seinfeld and Pandis, 2006. p.343, urban polluted
+      rmin = 1.d-8
+      nbinsout= 40
+      rad(1)=rmin
+      bin_factor=2.d0 !mass increment
+      wid(1)=rad(1)*(bin_factor**(1.d0/3.0d0)-1)
+      do i=2,nbinsout
+        rad_power=real(i-1)/3.0
+        rad(i)=rad(1)*bin_factor**rad_power
+        wid(i)=rad(i)-rad(i-1)
+      enddo
+      do i=1,nbinsout
+        n1= 7100.d0/6.d0
+        r1= 0.00585d-6
+        logsig= .232d0
+        logsig=log(10.d0)*logsig
+        dNdlogr(i) = n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+        n1= 6320.d0/6.d0  
+        r1= .0187d-6
+        logsig= .250d0
+        logsig=log(10.d0)*logsig
+        dNdlogr(i) = dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+        n1= 960.d0/6.d0
+        r1=.0755d-6
+        logsig= .204
+        logsig=log(10.d0)*logsig
+        dNdlogr(i) = dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+      enddo
+     do i=1,nbinsout
+        dNdr(i)=dNdlogr(i)/rad(i)
+        nrad(i)=dNdr(i)*wid(i)
+     enddo
+ 
   elseif (disp .eq. 35) then !Lulin 2010 rural
      rmin = 6.d-9
      nbinsout=35
      rad(1)=rmin
      bin_factor=2.d0 !mass increment
      wid(1)=rad(1)*(bin_factor**(1.d0/3.0d0)-1)
-     do i=2,nbinsout
+      do i=2,nbinsout
         rad_power=real(i-1)/3.0
         rad(i)=rad(1)*bin_factor**rad_power
         wid(i)=rad(i)-rad(i-1)
+      enddo
+      do i=1,nbinsout
         n1=6650.d0
         r1= 0.00739d-6
         logsig= .225d0
@@ -147,12 +184,9 @@ enddo
         logsig= .266
         logsig=log(10.d0)*logsig
         dNdlogr(i) = dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
-     enddo
-     do i=1,nbinsout
         dNdr(i)=dNdlogr(i)/rad(i)
         nrad(i)=dNdr(i)*wid(i)
-     enddo
- 
+      enddo
   elseif(disp .eq. 39 ) then !Jaenicke1988
      rmin = 6.d-9
      rmax = 5.d-6
@@ -230,10 +264,9 @@ enddo
         nrad(nbinsout+42)=.4542d-5!9micron
         nbinsout=nbinsout+42
   elseif (GCCN==2) then !some simple one size GCCN
-     read(80,*)
-     read(80,*) temp1,temp2
-     nrad(nbinsout+1)=temp1
-     rad(nbinsout+1)=temp2!number per cc
+
+     nrad(nbinsout+1)=gccn_ndrop
+     rad(nbinsout+1)=gccn_rad!number per cc
      nbinsout=nbinsout+1
   elseif (GCCN .eq. 3) then !add 3 mode lognormal seeding distribution by Cooper et al. 1997
 	   !mode 1
