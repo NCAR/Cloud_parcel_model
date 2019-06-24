@@ -108,6 +108,10 @@ program Parcel
          kappa(1) =  0.3d0
          kappa(2) =  1.2d0
          GCCN  =  2  !monodisperse GCCN
+      elseif(disp .eq. 34 .or. disp .eq. 32) then !disp=34 IUGG case multi polluted background + GCCN. disp=32: pristine+GCCN
+         kappa(1:nbinsout-1) = 0.3d0
+         kappa(nbinsout) = 1.2d0
+         GCCN = 2 
       endif
       !-------------------------------------------------------!
       if (GCCN .ne. 0) print*,'GCCN is on, value = ',GCCN

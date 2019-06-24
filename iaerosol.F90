@@ -125,16 +125,16 @@ read(80,*) gccn_ndrop,gccn_rad
         dNdr(1:nbinsout) = dNdlogr(1:nbinsout)/rad(1:nbinsout)
         nrad(1:nbinsout) = dNdr(1:nbinsout)*wid(1:nbinsout)
   elseif (disp .eq. 34) then !modified from Seinfeld and Pandis, 2006. p.343, urban polluted
-      rmin = 1.d-8
-      nbinsout= 40
-      rad(1)=rmin
-      bin_factor=2.d0 !mass increment
-      wid(1)=rad(1)*(bin_factor**(1.d0/3.0d0)-1)
-      do i=2,nbinsout
-        rad_power=real(i-1)/3.0
+     nbinsout=39
+     rmin = 1.d-8
+     rad(1)=rmin
+     bin_factor=2.0d0 !mass increment
+     wid(1)=rad(1)*(bin_factor**(1.d0/3.d0)-1.d0)
+     do i=2,nbinsout
+        rad_power=real(i-1)/3.d0
         rad(i)=rad(1)*bin_factor**rad_power
         wid(i)=rad(i)-rad(i-1)
-      enddo
+     enddo
       do i=1,nbinsout
         n1= 7100.d0/6.d0
         r1= 0.00585d-6
