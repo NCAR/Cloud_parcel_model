@@ -102,16 +102,17 @@ program Parcel
 	      rho_ccn=2160.d0 !NaCl
 	      m_s=58.44d-3
 	      vh = 2.
-	      GCCN=1
          kappa(1:nbinsout)=vh*m_w/m_s*rho_ccn/rhow
       elseif (disp .eq. 20) then !IUGG case mono backgound + GCCN
          kappa(1) =  0.3d0
          kappa(2) =  1.2d0
-         GCCN  =  2  !monodisperse GCCN
       elseif(disp .eq. 34 .or. disp .eq. 32) then !disp=34 IUGG case multi polluted background + GCCN. disp=32: pristine+GCCN
-         kappa(1:nbinsout-1) = 0.3d0
-         kappa(nbinsout) = 1.2d0
-         GCCN = 2 
+         if (GCCN .eq. 2) then
+            kappa(1:nbinsout-1) = 0.3d0
+            kappa(nbinsout) = 1.2d0
+         elseif (GCCN .eq.0) then
+            kappa(1:nbinsout)=0.3d0
+         endif
       endif
       !-------------------------------------------------------!
       if (GCCN .ne. 0) print*,'GCCN is on, value = ',GCCN
