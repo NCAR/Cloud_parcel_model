@@ -9,11 +9,12 @@ module parameter_mod
       real,parameter ::  KK = 8.54d-11
       real,parameter :: grav=9.8
       real,parameter :: visc = 1.78e05!0.16d-4!1.78e-5
-      real,parameter :: lat = 2.5e-6!2.477d6!2.5e-6
+      real,parameter :: lat = 2.477d6!2.5e6
       real,parameter :: ra=287.0 
       real,parameter :: cp=1004.0!1005.0 
       real,parameter :: rv= 467!461.5!467
       real,parameter :: m_w=18.d-3 !molecular weight of water
+      real,parameter :: m_d=29.0d-3 !molecular weight of dry air
       real,parameter :: rhow=1000.0 !density of water
       real,parameter :: eps=ra/rv
       real,parameter :: latovercp=lat/cp

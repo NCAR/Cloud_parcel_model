@@ -93,16 +93,16 @@ program Parcel
 	      m_s=132.14d-3
 	      vh = 3.!2.
          kappa(1:nbinsout)=vh*m_w/m_s*rho_ccn/rhow
-      elseif (disp .eq. 30 .or. disp .eq. 35 ) then !Xue10  case
-	      rho_ccn=1726.d0!2160.d0!1726.d0 !ammonium sulfate
-	      m_s=132.14d-3!58.44d-3!132.14d-3 
-	      vh = 3.!2.
-         kappa(1:nbinsout)=vh*m_w/m_s*rho_ccn/rhow
-      elseif (disp .eq. 31 .or. disp .eq. 32) then !NJ17
-	      rho_ccn=2160.d0 !NaCl
-	      m_s=58.44d-3
-	      vh = 2.
-         kappa(1:nbinsout)=vh*m_w/m_s*rho_ccn/rhow
+      !elseif (disp .eq. 30 .or. disp .eq. 35 ) then !Xue10  case
+	   !   rho_ccn=1726.d0!2160.d0!1726.d0 !ammonium sulfate
+	   !   m_s=132.14d-3!58.44d-3!132.14d-3 
+	   !   vh = 3.!2.
+      !   kappa(1:nbinsout)=vh*m_w/m_s*rho_ccn/rhow
+      !elseif (disp .eq. 31 .or. disp .eq. 32) then !NJ17
+	   !   rho_ccn=2160.d0 !NaCl
+	   !   m_s=58.44d-3
+	   !   vh = 2.
+      !   kappa(1:nbinsout)=vh*m_w/m_s*rho_ccn/rhow
       elseif (disp .eq. 20) then !IUGG case mono backgound + GCCN
          kappa(1) =  0.3d0
          kappa(2) =  1.2d0
@@ -114,6 +114,7 @@ program Parcel
             kappa(1:nbinsout)=0.3d0
          endif
       endif
+      write(60,*) kappa(1:nbinsout)
       !-------------------------------------------------------!
       if (GCCN .ne. 0) print*,'GCCN is on, value = ',GCCN
       write(50,145) 0.,(dsd(i), i=1,nbinsout)
@@ -121,9 +122,6 @@ program Parcel
       print*,'number of drops ',ndrop
       print*,'dispersion type ',disp
 !-------------initialize variables------------
-!      if(isolu .eq. 1) then
-!         print*, 'kappa = ', kappa(1)
-!      endif
       h = 1.d-2 !.01m=1cm
       volume = h**3
       pp=p1
@@ -142,7 +140,8 @@ program Parcel
 !--------------start with r_wet=1.5*r_d-----------------------!
    if (idebug .eq. 1) print*,'dry radius',rad_ccn(1:2)
    call wetradius(isolu,sp,dsd,rad_ccn,rad_wet,kappa)
-   print*, 'get wet radius'
+   !rad_wet=rad_ccn*2.**(1./3.)
+   print*, 'get wet radius','radwet',rad_wet
       rad=rad_wet !droplet radius
       if (idebug .eq. 1) print*,'dry & wet radius',rad_ccn(1:2),rad(1:2)
 !--------------spin-up------------------
@@ -203,7 +202,7 @@ write(16,*) 0.d0-time_prep,0.d0,Sp,lwc,rad(1),rad(2),pp,temperature, & !8
 print*,'evolution of droplet size starting with rm=',rm
       do 100 ntmic=1,ntot
          time = ntmic*delt
-         pp=rhoa*Ra*(1+m_w/29.d-3*qvpp)*temperature!pp-rhoa*grav*delt*up!
+         pp=rhoa*Ra*(1.d0+m_w/m_d*qvpp)*temperature!pp-rhoa*grav*delt*up!
          exner = (PP/P0)**RACP         
          sumrp=sum(dr3(1:nbinsout)*dsd(1:nbinsout))/3.d0
 	      deltaqp=cql*sumrp!cdp condensation

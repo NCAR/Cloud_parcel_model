@@ -1,7 +1,7 @@
 #see forum https://stackoverflow.com/questions/35234003/how-to-create-a-makefile-for-a-fortran-program-using-modules
 # details of makefile tutorial http://makepp.sourceforge.net/1.19/makepp_tutorial.html
 # compiler
-FC=gfortran
+FC=gfortran-mp-8
 
 # compile flag
 
