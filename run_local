@@ -1,5 +1,6 @@
 #!/bin/bash
-rm eXparcel simple.* 
+rm cloud_parcel IUGG.*
 #test.out
-gfortran-mp-8 activation.F90 -o eXparcel
-./eXparcel > stdout
+#gfortran activation.F90 -o cloud_parcel
+make
+./cloud_parcel > stdout

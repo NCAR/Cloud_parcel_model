@@ -2,7 +2,7 @@
 #PBS -N CC2
 #PBS -l select=1:ncpus=1
 #PBS -l walltime=00:05:00
-#PBS -A P54048000  
+#PBS -A WYOM0004  
 #PBS -j oe
 #PBS -q regular
 #PBS -M sisichen@ucar.edu
@@ -10,7 +10,7 @@
 ## set directories
 ## set your executable file
 
-## PBS -A WYOM0004
+## PBS -A P54048000
 ## PBS -A P48500028 
 ##HAP group account
 ## start the application
@@ -24,6 +24,6 @@
 #mpirun -n 32 ./cloud_turb > stdout_cheyenne
 #export MPI_SHEPHERD=true 
 #mpiexec_mpt peak_memusage.exe ./cloud_turb > stdout_cheyenne
-time ./eXparcel >stdout
+time ./cloud_parcel >stdout
 #mpirun -n $[PBS_NUM_NODES*ppn] -npernode $ppn $myExe
 #mpiexec -n $[PBS_NUM_NODES*ppn] -npernode $ppn  $myExe > stdout

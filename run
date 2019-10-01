@@ -1,6 +1,8 @@
 #!/bin/bash
-rm eXparcel 
+rm cloud_parcel IUGG.*
+#rm eXparcel 
 #test.out
-gfortran activation.F90 -o eXparcel
+make
+#gfortran activation.F90 -o eXparcel
 #./thiseX > stdout
 qsub run_cheyenne 
