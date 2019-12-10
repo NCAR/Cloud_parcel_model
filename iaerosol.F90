@@ -1,5 +1,5 @@
     SUBROUTINE IAEROSOL(rad,nrad,ndrop,rm,GCCN)
-!---- This subroutine determines the initial position and size of all droplets
+!---- This subroutine determines the initial particle sizes
      use parameter_mod
      implicit none
   ! --- argument ---
@@ -14,7 +14,7 @@
  145 format(1x,100(e16.8,2x))
  111 format(a20,i3)
 
-! Set everything to zero.
+!Initialize everything.
 rad = 0.0
 ndrop=0.0 
 rm=0.d0

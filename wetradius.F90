@@ -22,7 +22,7 @@ SUBROUTINE wetradius(isolu,sp0,nrad,rad_ccn,rad_wet,kappa)
       seq=sp_c+.01d0
 	   seq1=seq+.01d0
 	   seq2=seq+.01d0
-      if (rad_ccn(id) .le. 1.d-6) then
+      if (rad_ccn(id) .le. 5.d-6) then
       do 200 while(abs(seq-sp_c) .gt. 1.d-7 .and. seq2 .ne. seq) 
          seq2=seq1
          seq1=seq
@@ -43,7 +43,7 @@ SUBROUTINE wetradius(isolu,sp0,nrad,rad_ccn,rad_wet,kappa)
 	      endif
 200   enddo !dowhile
       else !big r
-      rad_wet(id)=2.**(1./3.)*rad_ccn(id)
+      rad_wet(id)=1.5*rad_ccn(id)
       endif
 
 100   enddo !drop id

@@ -31,7 +31,7 @@ program Parcel
       character*100       :: str_statement
       real*8, allocatable, dimension(:) :: rad,rad_ccn,dsd,dr3,rad_wet,kappa
       integer           :: iinit,ifinal, isolu
-      integer           :: GCCN
+      integer           :: GCCN,iseed
       integer           :: iter,ntmic,ntot,i
       real*8            :: ndrop
       real              :: time_tot
@@ -46,7 +46,7 @@ program Parcel
       read(90,*) str_statement
       read(90,*) time_tot,time_prep
       read(90,*) str_statement
-      read(90,*) disp,GCCN
+      read(90,*) disp,GCCN,iseed
       read(90,*) str_statement
       read(90,*) up
       read(90,*) str_statement
@@ -93,16 +93,6 @@ program Parcel
 	      m_s=132.14d-3
 	      vh = 3.!2.
          kappa(1:nbinsout)=vh*m_w/m_s*rho_ccn/rhow
-      !elseif (disp .eq. 30 .or. disp .eq. 35 ) then !Xue10  case
-	   !   rho_ccn=1726.d0!2160.d0!1726.d0 !ammonium sulfate
-	   !   m_s=132.14d-3!58.44d-3!132.14d-3 
-	   !   vh = 3.!2.
-      !   kappa(1:nbinsout)=vh*m_w/m_s*rho_ccn/rhow
-      !elseif (disp .eq. 31 .or. disp .eq. 32) then !NJ17
-	   !   rho_ccn=2160.d0 !NaCl
-	   !   m_s=58.44d-3
-	   !   vh = 2.
-      !   kappa(1:nbinsout)=vh*m_w/m_s*rho_ccn/rhow
       elseif (disp .eq. 20) then !IUGG case mono backgound + GCCN
          kappa(1) =  0.3d0
          kappa(2) =  1.2d0
