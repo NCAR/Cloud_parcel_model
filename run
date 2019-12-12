@@ -1,5 +1,5 @@
 #!/bin/bash
-rm cloud_parcel IUGG.*
+rm cloud_parcel QLD_test.*
 #rm eXparcel 
 #test.out
 make

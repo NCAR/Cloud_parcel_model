@@ -18,6 +18,7 @@ program Parcel
         ! solu : solute term calculated either from kappa (isolu=1) or from classical format,
         !see Jensen & Nugent 2017, eqn (1)
         ! disp: DSD dispersion flags
+        ! GCCN: natural GCCN & seeding particle size flags
         ! 
         !///////////////////////////////////////////////////////////////////////////////!!
       use parameter_mod
@@ -84,16 +85,11 @@ program Parcel
       rad=rm
       dsd=0.d0
       dr3=0.d0
-      call iaerosol(rad_ccn,dsd,ndrop,rm,GCCN)
+      call iaerosol(rad_ccn,dsd,ndrop,rm,GCCN,iseed)
       print*,'radius',rad_ccn(1:2)
       ! to get dry radius rad_ccn
       print*,'maximum binsize is',nbinsout
-      if (disp .eq. 2) then ! mono or bi-disperse
-	      rho_ccn=1726.d0!ammonium sulfate
-	      m_s=132.14d-3
-	      vh = 3.!2.
-         kappa(1:nbinsout)=vh*m_w/m_s*rho_ccn/rhow
-      elseif (disp .eq. 20) then !IUGG case mono backgound + GCCN
+      if (disp .eq. 1) then !IUGG case mono backgound + GCCN
          kappa(1) =  0.3d0
          kappa(2) =  1.2d0
       elseif(disp .eq. 34 .or. disp .eq. 32) then !disp=34 IUGG case multi polluted background + GCCN. disp=32: pristine+GCCN
@@ -130,7 +126,6 @@ program Parcel
 !--------------start with r_wet=1.5*r_d-----------------------!
    if (idebug .eq. 1) print*,'dry radius',rad_ccn(1:2)
    call wetradius(isolu,sp,dsd,rad_ccn,rad_wet,kappa)
-   !rad_wet=rad_ccn*2.**(1./3.)
    print*, 'get wet radius','radwet',rad_wet
       rad=rad_wet !droplet radius
       if (idebug .eq. 1) print*,'dry & wet radius',rad_ccn(1:2),rad(1:2)
