@@ -2,7 +2,7 @@
 #PBS -N CC2
 #PBS -l select=1:ncpus=1
 #PBS -l walltime=00:05:00
-#PBS -A WYOM0004  
+#PBS -A P54048000 
 #PBS -j oe
 #PBS -q regular
 #PBS -M sisichen@ucar.edu

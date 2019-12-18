@@ -1,25 +1,24 @@
-    SUBROUTINE IAEROSOL(rad,nrad,ndrop,rm,GCCN,iseed)
+    SUBROUTINE IAEROSOL(ndrop,rm,GCCN,iseed)
 !---- This subroutine determines the initial dry particle sizes
      use parameter_mod
      implicit none
   ! --- argument ---
      integer :: GCCN,iseed
-     real*8, dimension(nbins) :: rad,nrad
+     !real*8, dimension(nbins) :: rad_ccn,nrad
      real*8 :: rm,ndrop,ccn_ndrop,ccn_rad,gccn_ndrop,gccn_rad
   ! --- local --
      integer :: i
-     real*8, allocatable, dimension(:) :: wid,dNdlogr,dNdr
+     !real*8, allocatable, dimension(:) :: wid,dNdlogr,dNdr
      real*8 :: r1,n1,logsig,rmin,rmax
      real*8 :: logrmin,logrmax,rad_power,bin_factor
- 145 format(1x,100(e16.8,2x))
+ 145 format(1x,101(e16.8,2x))
  111 format(a20,i3)
 
 !Initialize everything.
-rad = 0.0
+rad_ccn = 0.0
 ndrop=0.0 
 rm=0.d0
 nrad=0.
-allocate(wid(nbins),dNdlogr(nbins),dNdr(nbins))
 dNdlogr = 0.0
 dNdr = 0.0d0
 wid =0.d0
@@ -33,48 +32,56 @@ read(80,*) gccn_ndrop,gccn_rad
 !size dispersion for natural background aerosols
    if (disp .eq. 1) then !mono disperse
      nbinsout = 1
-     nrad(nbinsout)=ccn_ndrop !number per cc
-     rad(nbinsout)=ccn_rad
+     nrad(1:nbinsout)=ccn_ndrop !number per cc
+     rad_ccn(1:nbinsout)=ccn_rad
+     kappa(1:nbinsout)=0.3d0
    elseif (disp .eq. 10) then !QLD Jan 23 2009 continental case (see Tessendorf et al. 2012 BAMS)
-      nbinsout = 40
+      nbinsout = 56
       rmin = 5.d-9
-      rad(1)=rmin
-      bin_factor=2.d0
-      wid(1)=rad(1)*(bin_factor**(1.d0/3.d0)-1.d0)
+      rad_ccn(1)=rmin
+      bin_factor=1.5d0
+      !r range from 5.d-9 to 10micron
+      wid(1)=rad_ccn(1)*(bin_factor**(1.d0/3.d0)-1.d0)
       do i = 2,nbinsout
          rad_power=real(i-1)/3.d0
-         rad(i)=rad(1)*bin_factor**rad_power
-         wid(i)=rad(i)-rad(i-1)
+         rad_ccn(i)=rad_ccn(1)*bin_factor**rad_power
+         wid(i)=rad_ccn(i)-rad_ccn(i-1)
+         if(rad_ccn(i) .lt. 1.d6) kappa(i)=.3 !mix of everything
+         if(rad_ccn(i) .ge. 1.d6) kappa(i)=.05 !dust
       enddo
       do i =1,nbinsout
          n1=3750.d0
          r1=0.0269d-6
          logsig=2.0353d0 !in natural scale
          logsig=log(logsig)!put it to log scale for log-normal fit
-         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
          n1=56.41d0
          r1=0.139d-6
          logsig=1.373d0
          logsig=log(logsig)
-         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
-         n1=0.964d0
+         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+         n1=0.2d0
          r1=1.441d-6
          logsig=1.877d0
          logsig=log(logsig)
-         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
       enddo
-     dNdr(1:nbinsout)=dNdlogr(1:nbinsout)/rad(1:nbinsout)
-     nrad(1:nbinsout)=dNdr(1:nbinsout)*wid(1:nbinsout)
+      !kappa(1:nbinsout)=0.3d0
+      dNdr(1:nbinsout)=dNdlogr(1:nbinsout)/rad_ccn(1:nbinsout)
+      nrad(1:nbinsout)=dNdr(1:nbinsout)*wid(1:nbinsout)
    elseif (disp .eq. 11) then !QLD Jan 26 2009 maritime case
-      nbinsout = 50
+      nbinsout = 56
       rmin = 5.d-9
-      rad(1)=rmin
-      bin_factor=2.d0
-      wid(1)=rad(1)*(bin_factor**(1.d0/3.d0)-1.d0)
+      rad_ccn(1)=rmin
+      bin_factor=1.5d0
+      !r range from 5.d-9 to 10micron
+      wid(1)=rad_ccn(1)*(bin_factor**(1.d0/3.d0)-1.d0)
       do i = 2,nbinsout
          rad_power=real(i-1)/3.d0
-         rad(i)=rad(1)*bin_factor**rad_power
-         wid(i)=rad(i)-rad(i-1)
+         rad_ccn(i)=rad_ccn(1)*bin_factor**rad_power
+         wid(i)=rad_ccn(i)-rad_ccn(i-1)
+         if(rad_ccn(i) .lt. 1.d6) kappa(i)=.3 !mix of everything
+         if(rad_ccn(i) .ge. 1.d6) kappa(i)=1.2 !sea salt
       enddo
       do i =1,nbinsout
          !mode1
@@ -82,15 +89,15 @@ read(80,*) gccn_ndrop,gccn_rad
          r1=0.0125d-6
          logsig=1.9d0 !in natural scale
          logsig=log(logsig)!put it to log scale for log-normal fit
-         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)      
+         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)      
          !mode2
          n1=242.d0
          r1=0.076d-6
          logsig=1.608d0 !in natural scale
          logsig=log(logsig)!put it to log scale for log-normal fit
-         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2) 
+         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2) 
          !mode3
-         n1=9.25d0
+         n1=20.5d0
          r1=1.2d-6
          logsig=1.8d0 !in natural scale
          logsig=log(logsig)!put it to log scale for log-normal fit
@@ -99,155 +106,156 @@ read(80,*) gccn_ndrop,gccn_rad
          r1=3.d-6
          logsig=2.1d0 !in natural scale
          logsig=log(logsig)!put it to log scale for log-normal fit
-         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2) 
+         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2) 
       enddo
-     dNdr(1:nbinsout)=dNdlogr(1:nbinsout)/rad(1:nbinsout)
-     nrad(1:nbinsout)=dNdr(1:nbinsout)*wid(1:nbinsout)
+      !kappa(1:nbinsout)=0.3d0
+      dNdr(1:nbinsout)=dNdlogr(1:nbinsout)/rad_ccn(1:nbinsout)
+      nrad(1:nbinsout)=dNdr(1:nbinsout)*wid(1:nbinsout)
 
   elseif (disp .eq. 31) then !Jensen&Nugent 2017 modified polluted case
      nbinsout=30
      rmin = 1.d-8
-     rad(1)=rmin
+     rad_ccn(1)=rmin
      bin_factor=2.0d0 !mass increment
-     wid(1)=rad(1)*(bin_factor**(1.d0/3.d0)-1.d0)
+     wid(1)=rad_ccn(1)*(bin_factor**(1.d0/3.d0)-1.d0)
      do i=2,nbinsout
         rad_power=real(i-1)/3.d0
-        rad(i)=rad(1)*bin_factor**rad_power
-        wid(i)=rad(i)-rad(i-1)
+        rad_ccn(i)=rad_ccn(1)*bin_factor**rad_power
+        wid(i)=rad_ccn(i)-rad_ccn(i-1)
      enddo
      do i=1,nbinsout
         n1=48.d0!160!48.d0
         r1=.029d-6
         logsig=1.36d0
         logsig=log(logsig)
-        dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+        dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
         n1=125.d0!380!125.d0
         r1=.071d-6
         logsig=1.57d0
         logsig=log(logsig)
-        dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig)*exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+        dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig)*exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
      enddo
-     dNdr(1:nbinsout)=dNdlogr(1:nbinsout)/rad(1:nbinsout)
+     dNdr(1:nbinsout)=dNdlogr(1:nbinsout)/rad_ccn(1:nbinsout)
      nrad(1:nbinsout)=dNdr(1:nbinsout)*wid(1:nbinsout)
   elseif (disp .eq. 32) then !Jensen&Nugent 2017 pristine case
      nbinsout=39
      rmin = 1.d-8
-     rad(1)=rmin
+     rad_ccn(1)=rmin
      bin_factor=2.0d0 !mass increment
-     wid(1)=rad(1)*(bin_factor**(1.d0/3.d0)-1.d0)
+     wid(1)=rad_ccn(1)*(bin_factor**(1.d0/3.d0)-1.d0)
      do i=2,nbinsout
         rad_power=real(i-1)/3.d0
-        rad(i)=rad(1)*bin_factor**rad_power
-        wid(i)=rad(i)-rad(i-1)
+        rad_ccn(i)=rad_ccn(1)*bin_factor**rad_power
+        wid(i)=rad_ccn(i)-rad_ccn(i-1)
      enddo
      do i=1,nbinsout
         n1=125.d0
         r1=.011d-6
         logsig=1.2d0
         logsig=log(logsig)
-        dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig)*exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+        dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig)*exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
         n1=65.d0
         r1=.06d-6
         logsig=1.7d0
         logsig=log(logsig)
-        dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig)*exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+        dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig)*exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
      enddo
-        dNdr(1:nbinsout) = dNdlogr(1:nbinsout)/rad(1:nbinsout)
+        dNdr(1:nbinsout) = dNdlogr(1:nbinsout)/rad_ccn(1:nbinsout)
         nrad(1:nbinsout) = dNdr(1:nbinsout)*wid(1:nbinsout)
   elseif (disp .eq. 30) then !lulin 2010 maritime case
      nbinsout=50
      rmin = 1.d-9
-     rad(1)=rmin
+     rad_ccn(1)=rmin
      bin_factor=2.d0
-     wid(1)=rad(1)*(bin_factor**(1.d0/3.d0)-1.d0)
+     wid(1)=rad_ccn(1)*(bin_factor**(1.d0/3.d0)-1.d0)
      do i=2,nbinsout
         rad_power=real(i-1)/3.d0
-        rad(i)=rad(1)*bin_factor**rad_power
-        wid(i)=rad(i)-rad(i-1)
+        rad_ccn(i)=rad_ccn(1)*bin_factor**rad_power
+        wid(i)=rad_ccn(i)-rad_ccn(i-1)
      enddo
      do i=1,nbinsout
         n1=133.d0
         r1=0.0039d-6
         logsig=.657d0
         logsig=log(10.d0)*logsig
-        dNdlogr(i) = n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+        dNdlogr(i) = n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
         n1=66.6d0
         r1=.133d-6
         logsig=.21d0
         logsig=log(10.d0)*logsig
-        dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+        dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
         n1=3.06d0
         r1=.29d-6
         logsig=.396d0
         logsig=log(10.d0)*logsig
-        dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+        dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
      enddo
      do i=1,nbinsout 
-        dNdr(i)=dNdlogr(i)/rad(i)
+        dNdr(i)=dNdlogr(i)/rad_ccn(i)
         nrad(i)=dNdr(i)*wid(i)
      enddo
 
   elseif (disp .eq. 34) then !modified from Seinfeld and Pandis, 2006. p.343, urban polluted
      nbinsout=39
      rmin = 1.d-8
-     rad(1)=rmin
+     rad_ccn(1)=rmin
      bin_factor=2.0d0 !mass increment
-     wid(1)=rad(1)*(bin_factor**(1.d0/3.d0)-1.d0)
+     wid(1)=rad_ccn(1)*(bin_factor**(1.d0/3.d0)-1.d0)
      do i=2,nbinsout
         rad_power=real(i-1)/3.d0
-        rad(i)=rad(1)*bin_factor**rad_power
-        wid(i)=rad(i)-rad(i-1)
+        rad_ccn(i)=rad_ccn(1)*bin_factor**rad_power
+        wid(i)=rad_ccn(i)-rad_ccn(i-1)
      enddo
       do i=1,nbinsout
         n1= 7100.d0/6.d0
         r1= 0.00585d-6
         logsig= .232d0
         logsig=log(10.d0)*logsig
-        dNdlogr(i) = n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+        dNdlogr(i) = n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
         n1= 6320.d0/6.d0  
         r1= .0187d-6
         logsig= .250d0
         logsig=log(10.d0)*logsig
-        dNdlogr(i) = dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+        dNdlogr(i) = dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
         n1= 960.d0/6.d0
         r1=.0755d-6
         logsig= .204
         logsig=log(10.d0)*logsig
-        dNdlogr(i) = dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+        dNdlogr(i) = dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
       enddo
      do i=1,nbinsout
-        dNdr(i)=dNdlogr(i)/rad(i)
+        dNdr(i)=dNdlogr(i)/rad_ccn(i)
         nrad(i)=dNdr(i)*wid(i)
      enddo
  
   elseif (disp .eq. 35) then !Lulin 2010 rural
      rmin = 6.d-9
      nbinsout=35
-     rad(1)=rmin
+     rad_ccn(1)=rmin
      bin_factor=2.d0 !mass increment
-     wid(1)=rad(1)*(bin_factor**(1.d0/3.0d0)-1)
+     wid(1)=rad_ccn(1)*(bin_factor**(1.d0/3.0d0)-1)
       do i=2,nbinsout
         rad_power=real(i-1)/3.0
-        rad(i)=rad(1)*bin_factor**rad_power
-        wid(i)=rad(i)-rad(i-1)
+        rad_ccn(i)=rad_ccn(1)*bin_factor**rad_power
+        wid(i)=rad_ccn(i)-rad_ccn(i-1)
       enddo
       do i=1,nbinsout
         n1=6650.d0
         r1= 0.00739d-6
         logsig= .225d0
         logsig=log(10.d0)*logsig
-        dNdlogr(i) = n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+        dNdlogr(i) = n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
         n1= 147.d0    
         r1= .0269d-6
         logsig= .557
         logsig=log(10.d0)*logsig
-        dNdlogr(i) = dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+        dNdlogr(i) = dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
         n1= 1990.d0
         r1=.0419d-6
         logsig= .266
         logsig=log(10.d0)*logsig
-        dNdlogr(i) = dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
-        dNdr(i)=dNdlogr(i)/rad(i)
+        dNdlogr(i) = dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+        dNdr(i)=dNdlogr(i)/rad_ccn(i)
         nrad(i)=dNdr(i)*wid(i)
       enddo
   elseif(disp .eq. 39 ) then !Jaenicke1988
@@ -257,21 +265,21 @@ read(80,*) gccn_ndrop,gccn_rad
           n1=133.d0
           r1=0.0039d-6
           logsig=.657d0
-          dNdlogr(i) = n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log10(rad(i))-log10(r1))/(sqrt(2.0d0)*logsig))**2)
+          dNdlogr(i) = n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log10(rad_ccn(i))-log10(r1))/(sqrt(2.0d0)*logsig))**2)
           n1=66.6d0
           r1=.133d-6
           logsig=.21d0
-          dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log10(rad(i))-log10(r1))/(sqrt(2.0d0)*logsig))**2)
+          dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log10(rad_ccn(i))-log10(r1))/(sqrt(2.0d0)*logsig))**2)
           n1=3.06d0
           r1=.29d-6
           logsig=.396d0
-          dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log10(rad(i))-log10(r1))/(sqrt(2.0d0)*logsig))**2)
+          dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log10(rad_ccn(i))-log10(r1))/(sqrt(2.0d0)*logsig))**2)
   endif ! disp
   if (iseed .eq. 1) then
   !for extra loading of particles (natural GCCN or seeding)
   if(GCCN .eq. 1) then !JN17 GCCN
      do i=1,42
-        rad(nbinsout+i)=.8d-6+0.2d-6*real(i-1)
+        rad_ccn(nbinsout+i)=.8d-6+0.2d-6*real(i-1)
      enddo
         nrad(nbinsout+1)=0.1118d0
         nrad(nbinsout+2)=.06849d0!1micron
@@ -318,54 +326,70 @@ read(80,*) gccn_ndrop,gccn_rad
         nbinsout=nbinsout+42
   elseif (GCCN==2) then !some simple one size GCCN
      nrad(nbinsout+1)=gccn_ndrop
-     rad(nbinsout+1)=gccn_rad!number per cc
+     rad_ccn(nbinsout+1)=gccn_rad!number per cc
      nbinsout=nbinsout+1
+     kappa(nbinsout+1)=1.2d0
   elseif (GCCN .eq. 3) then !add 3 mode lognormal seeding distribution by Cooper et al. 1997
+      do i =nbinsout+1,nbinsout+nbinsout2
 	   !mode 1
 	   n1=100.d0
 	   r1=.15d-6
 	   logsig=.2d0
 	   logsig=log(10.d0)*logsig
-      dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+      dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
 	   !mode 2
       n1=100.d0*1.7d-4
       r1=.5d-6
       logsig=.4d0
       logsig=log(10.d0)*logsig
-      dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+      dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
       !mode 3
       n1=100.d0*3.d-7
       r1=5.d-6
       logsig=.6d0
       logsig=log(10.d0)*logsig
-      dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
-
-      dNdr(1:nbinsout)=dNdr(1:nbinsout)+dNdlogr(1:nbinsout)/rad(1:nbinsout)
-      nrad(1:nbinsout)=nrad(1:nbinsout)+dNdr(1:nbinsout)*wid(1:nbinsout)
-   elseif (GCCN .eq. 4) then !QLD seeding cases (2 modes)
-   !require multidisperse background aerosol SD to activate this flag; otherwise need to define rad,nbinsout.
-      do i =1,nbinsout
-         if(rad(i) .ge. 1.d-7 .and. rad(i) .le. 1.d-5) then !size range of seeded particle
-            n1=4.d6
-            r1=0.15d-6
-            logsig=1.41d0 !in natural scale
-               logsig=log(logsig)!put it to log scale for log-normal fit
-            dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
-            n1=300.d0
-            r1=.5d-6
-            logsig=2.0d0
-            logsig=log(logsig)
-            dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
-         endif !size range of seeded particle
+      dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) * exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
       enddo
-        dNdr(1:nbinsout) = dNdlogr(1:nbinsout)/rad(1:nbinsout)
-        nrad(1:nbinsout) = dNdr(1:nbinsout)*wid(1:nbinsout)
+      dNdr(nbinsout+1:nbinsout+nbinsout2) = dNdr(nbinsout+1:nbinsout+nbinsout2) + &
+         & dNdlogr(nbinsout+1:nbinsout+nbinsout2) / rad_ccn(nbinsout+1:nbinsout+nbinsout2)
+      nrad(nbinsout+1:nbinsout+nbinsout2) = nrad(nbinsout+1:nbinsout+nbinsout2)+ & 
+         & dNdr(nbinsout+1:nbinsout+nbinsout2) * wid(nbinsout+1:nbinsout+nbinsout2)
+      kappa(nbinsout+1:nbinsout+nbinsout2) = 1.2d0
+
+   elseif (GCCN .eq. 4) then !QLD seeding cases (2 modes)
+   !require multidisperse background aerosol SD to activate this flag; otherwise need to define rad_ccn,nbinsout.
+         !size range of seeded particle r=1.5d-7 to 5d-6
+      nbinsout2=26
+      rmin=1.5d-7
+      bin_factor=1.5d0
+      rad_ccn(nbinsout+1)=rmin
+      wid(nbinsout+1)=rad_ccn(nbinsout+1)*(bin_factor**(1.d0/3.d0)-1.d0)
+      do i = nbinsout+2,nbinsout+nbinsout2
+         rad_power=real(i-nbinsout-1)/3.d0
+         rad_ccn(i)=rad_ccn(nbinsout+1)*bin_factor**rad_power
+         wid(i)=rad_ccn(i)-rad_ccn(i-1)
+      enddo
+      do i =nbinsout+1,nbinsout+nbinsout2
+         n1=4.d4
+         r1=0.15d-6
+         logsig=1.41d0 !in natural scale
+         logsig=log(logsig)!put it to log scale for log-normal fit
+         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+         n1=300.d0
+         r1=.5d-6
+         logsig=2.0d0
+         logsig=log(logsig)
+         dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+      enddo
+      dNdlogr(nbinsout+1:nbinsout+nbinsout2)=dNdlogr(nbinsout+1:nbinsout+nbinsout2)/100
+      kappa(nbinsout+1:nbinsout+nbinsout2) = 1.2d0
+      dNdr(nbinsout+1:nbinsout+nbinsout2) = dNdlogr(nbinsout+1:nbinsout+nbinsout2)/rad_ccn(nbinsout+1:nbinsout+nbinsout2)
+      nrad(nbinsout+1:nbinsout+nbinsout2) = dNdr(nbinsout+1:nbinsout+nbinsout2)*wid(nbinsout+1:nbinsout+nbinsout2)
   endif!GCCN
-  endif
-  ndrop=sum(nrad(1:nbinsout)) !total number 
-  rm = (sum(rad(1:nbinsout)**3*nrad(1:nbinsout))/ndrop)**(1.d0/3.d0)
+  endif !iseed
+   ndrop=sum(nrad(1:nbinsout+nbinsout2))
+   rm= ( sum( rad_ccn(1:nbinsout+nbinsout2)**3 * nrad(1:nbinsout+nbinsout2) ) /ndrop)**(1.d0/3.d0)
   if (idebug .eq. 1) print*,"rm", rm, 'nbins',nbins,'nbinsout',nbinsout,'ndrop',ndrop
-deallocate(wid,dNdlogr,dNdr)
 close(unit=80)
  299   format(1x,(e12.6),3(f8.6))
  199   format(1x,3(f8.6))

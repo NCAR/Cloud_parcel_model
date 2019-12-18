@@ -1,4 +1,4 @@
-SUBROUTINE wetradius(isolu,sp0,nrad,rad_ccn,rad_wet,kappa)
+SUBROUTINE wetradius(isolu,sp0)!,nrad,rad_ccn,rad_wet,kappa)
    ! this subroutine calculate the equilibrium radius at current thermodynamic environment
    use parameter_mod
    implicit none
@@ -7,7 +7,7 @@ SUBROUTINE wetradius(isolu,sp0,nrad,rad_ccn,rad_wet,kappa)
    real(dp) :: curv, solu, sp_c,sp0
    real, parameter :: sp_init=-1.d-2
 
-   real(dp), dimension(nbins) :: nrad,rad_ccn,rad_wet,kappa
+   !real(dp), dimension(nbins) :: nrad,rad_ccn,rad_wet,kappa
 !/////////calculate necessary parameters& coefficients
    diffvnd1=1.d-5*(0.015*temperature-1.9)
    ka1=1.5d-11*temperature**3-4.8d-8*temperature**2+1.d-4*temperature-3.9d-4
@@ -18,7 +18,7 @@ SUBROUTINE wetradius(isolu,sp0,nrad,rad_ccn,rad_wet,kappa)
    !--------------iterate until get equilibrium saturation status around each droplet surface----!
    sp_c=min(sp0,sp_init)
    print*, 'initial supersaturation for computing equilibrium wet radius=',sp_c
-   do 100 id=1,nbinsout
+   do 100 id=1,nbinsout+nbinsout2
       seq=sp_c+.01d0
 	   seq1=seq+.01d0
 	   seq2=seq+.01d0
@@ -43,7 +43,7 @@ SUBROUTINE wetradius(isolu,sp0,nrad,rad_ccn,rad_wet,kappa)
 	      endif
 200   enddo !dowhile
       else !big r
-      rad_wet(id)=1.5*rad_ccn(id)
+      rad_wet(id)=2.**(1./3.)*rad_ccn(id)
       endif
 
 100   enddo !drop id

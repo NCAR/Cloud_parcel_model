@@ -21,8 +21,9 @@ module parameter_mod
       real :: m_s !molecular weight of solute; ammonium sulfate=132.14d-3; NaCl = 58.44d-3
       real :: rho_ccn,vh !van Hoff factor and density of ccn !kg/m**3 for ammonium sulfate =1726.d0 for NaCl=2160.d0
       real*8,parameter :: sigma_sa=7.61d-2
-      integer :: disp,nbins,nbinsout
+      integer :: disp,nbins,nbins2,nbinsout,nbinsout2 
       integer :: idebug
       real*8  ::  temperature,ks,rhoa
       real*8  :: diffvnd1,diffvnd2,ka1,ka2
+      real*8, allocatable, dimension(:) :: nrad, rad_ccn, dr3, rad_wet, kappa, wid, dNdlogr, dNdr
 end module parameter_mod
