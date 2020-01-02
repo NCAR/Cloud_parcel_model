@@ -36,8 +36,8 @@ read(80,*) gccn_ndrop,gccn_rad
      rad_ccn(1:nbinsout)=ccn_rad
      kappa(1:nbinsout)=0.3d0
    elseif (disp .eq. 10) then !QLD Jan 23 2009 continental case (see Tessendorf et al. 2012 BAMS)
-      nbinsout = 56
-      rmin = 5.d-9
+      nbinsout = 38!56
+      rmin = 5.d-8!5.d-9
       rad_ccn(1)=rmin
       bin_factor=1.5d0
       !r range from 5.d-9 to 10micron
@@ -46,8 +46,8 @@ read(80,*) gccn_ndrop,gccn_rad
          rad_power=real(i-1)/3.d0
          rad_ccn(i)=rad_ccn(1)*bin_factor**rad_power
          wid(i)=rad_ccn(i)-rad_ccn(i-1)
-         if(rad_ccn(i) .lt. 1.d6) kappa(i)=.3 !mix of everything
-         if(rad_ccn(i) .ge. 1.d6) kappa(i)=.05 !dust
+         if(rad_ccn(i) .lt. 1.d-6) kappa(i)=.3d0 !mix of everything
+         if(rad_ccn(i) .ge. 1.d-6) kappa(i)=.1d0 !dust
       enddo
       do i =1,nbinsout
          n1=3750.d0
@@ -60,7 +60,7 @@ read(80,*) gccn_ndrop,gccn_rad
          logsig=1.373d0
          logsig=log(logsig)
          dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
-         n1=0.2d0
+         n1=0.964d0
          r1=1.441d-6
          logsig=1.877d0
          logsig=log(logsig)
@@ -70,8 +70,8 @@ read(80,*) gccn_ndrop,gccn_rad
       dNdr(1:nbinsout)=dNdlogr(1:nbinsout)/rad_ccn(1:nbinsout)
       nrad(1:nbinsout)=dNdr(1:nbinsout)*wid(1:nbinsout)
    elseif (disp .eq. 11) then !QLD Jan 26 2009 maritime case
-      nbinsout = 56
-      rmin = 5.d-9
+      nbinsout = 38!56
+      rmin = 5.d-8!5.d-9
       rad_ccn(1)=rmin
       bin_factor=1.5d0
       !r range from 5.d-9 to 10micron
@@ -80,8 +80,8 @@ read(80,*) gccn_ndrop,gccn_rad
          rad_power=real(i-1)/3.d0
          rad_ccn(i)=rad_ccn(1)*bin_factor**rad_power
          wid(i)=rad_ccn(i)-rad_ccn(i-1)
-         if(rad_ccn(i) .lt. 1.d6) kappa(i)=.3 !mix of everything
-         if(rad_ccn(i) .ge. 1.d6) kappa(i)=1.2 !sea salt
+         if(rad_ccn(i) .lt. 1.d-6) kappa(i)=.4d0 !mix of everything
+         if(rad_ccn(i) .ge. 1.d-6) kappa(i)=.5d0 !sea salt
       enddo
       do i =1,nbinsout
          !mode1
@@ -97,7 +97,7 @@ read(80,*) gccn_ndrop,gccn_rad
          logsig=log(logsig)!put it to log scale for log-normal fit
          dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2) 
          !mode3
-         n1=20.5d0
+         n1=9.25d0
          r1=1.2d-6
          logsig=1.8d0 !in natural scale
          logsig=log(logsig)!put it to log scale for log-normal fit
@@ -381,7 +381,7 @@ read(80,*) gccn_ndrop,gccn_rad
          logsig=log(logsig)
          dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
       enddo
-      dNdlogr(nbinsout+1:nbinsout+nbinsout2)=dNdlogr(nbinsout+1:nbinsout+nbinsout2)/100
+      dNdlogr(nbinsout+1:nbinsout+nbinsout2)=dNdlogr(nbinsout+1:nbinsout+nbinsout2)
       kappa(nbinsout+1:nbinsout+nbinsout2) = 1.2d0
       dNdr(nbinsout+1:nbinsout+nbinsout2) = dNdlogr(nbinsout+1:nbinsout+nbinsout2)/rad_ccn(nbinsout+1:nbinsout+nbinsout2)
       nrad(nbinsout+1:nbinsout+nbinsout2) = dNdr(nbinsout+1:nbinsout+nbinsout2)*wid(nbinsout+1:nbinsout+nbinsout2)

@@ -1,6 +1,6 @@
 #input variables for initial conditions in activation.F90
 filenames to output
-seeded_undilute_conti
+seeded_cont_trunc0.05
 total time (s); spin up time
 300.d0 0.
 particle disperse parameter (disp); GCCN parameter; iseed flag (1=on,0=off)
@@ -9,7 +9,7 @@ updraft speed (m/s)
 5.0
 initial supersaturation
 -10.00d-2
-solute term option: 1 use hygroscopicity; 2 classical solute term
+solute term option: 1 use hygroscopicity parameter; 2 classical solute term
 1
 initial temperature (K)
 293.d0
