@@ -381,7 +381,7 @@ read(80,*) gccn_ndrop,gccn_rad
          logsig=log(logsig)
          dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
       enddo
-      dNdlogr(nbinsout+1:nbinsout+nbinsout2)=dNdlogr(nbinsout+1:nbinsout+nbinsout2)
+      dNdlogr(nbinsout+1:nbinsout+nbinsout2)=dNdlogr(nbinsout+1:nbinsout+nbinsout2)/100.d0!determine the dilution
       kappa(nbinsout+1:nbinsout+nbinsout2) = 1.2d0
       dNdr(nbinsout+1:nbinsout+nbinsout2) = dNdlogr(nbinsout+1:nbinsout+nbinsout2)/rad_ccn(nbinsout+1:nbinsout+nbinsout2)
       nrad(nbinsout+1:nbinsout+nbinsout2) = dNdr(nbinsout+1:nbinsout+nbinsout2)*wid(nbinsout+1:nbinsout+nbinsout2)

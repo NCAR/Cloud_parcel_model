@@ -28,7 +28,7 @@ program Parcel
       real*8            :: exner,racp,p1,PP,sumrp
       real*8            :: rm,rm0,curv,solu
       real*8            :: deltaqp,lwc,cql,cdp
-      character*30        :: name
+      character*50        :: name
       !real*8, allocatable, dimension(:) :: rad_wet,rad_ccn,nrad,dr3,kappa
       integer           :: GCCN,iseed,isolu
       integer           :: iter,ntmic,ntot,i,irad,imax
