@@ -30,13 +30,13 @@
       real,parameter :: m_s=132.14d-3!molecular weight of solute; ammonium sulfate=132.14d-3; NaCl = 58.44d-3
       real,parameter :: rhow=1000.0
       real,parameter :: eps=ra/rv
-      real,parameter :: vh=3. !van hoff factor
+      real,parameter :: vh=2. !van hoff factor
       real,parameter :: latovercp=lat/cp
       real,parameter :: rho_ccn = 1726.d0 !kg/m**3 for ammonium sulfate =1726.d0 for NaCl=2160.d0
 196   format(1x,6(f16.8,2x))
 145   format(1x,100(e16.8,2x))
 
-      time_prep=1.d0
+      time_prep=0.d0
       delt= 1.d-04
       ntot=200./delt
       !setup output files
