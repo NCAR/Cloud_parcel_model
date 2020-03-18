@@ -1,0 +1,10 @@
+#!/bin/bash
+#PBS -N parcel
+#PBS -l select=1:ncpus=1:mpiprocs=1
+#PBS -l walltime=00:2:00
+#PBS -A P54048000
+#PBS -j oe
+#PBS -q regular
+##PBS -q economy
+
+time mpiexec_mpt ./cloud_turb > stdout_cheyenne

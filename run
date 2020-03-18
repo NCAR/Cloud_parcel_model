@@ -1,5 +1,8 @@
 #!/bin/bash
-rm thiseX 
+rm new.* cloud_turb 
 #test.out
-gfortran activation.F90 -o thiseX
-./thiseX > stdout
+gfortran activation.F90 -o cloud_turb
+if [ -f cloud_turb ];
+then
+   qsub run_cheyenne
+fi
