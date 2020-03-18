@@ -4,17 +4,17 @@
       real*8 :: tau,source,qvpp,qvs,PP,esat,ks,temp,dp,time,temp0,upp,time_prep
       real*8 :: rhoa,rhoa0,sp,sp2,vol,avgconc,cql,h,thetapp,cdp,cd,seq,seq1,seq2
       real*8 :: exner,racp,p0,p1,sumrp,edr
-      real*8   :: rm,rm1,rm0,curv,solu
+      real*8   :: rm,rm1,rm0,curv,solu,taup
       real*8 :: aa11,aa22,vtemp,vtemp1,delt
       real*8 :: thetap,qvp,deltaqp,dtheta,gamma,gamma1
       character*1 :: name
-      real(8), allocatable, dimension(:) :: rad,rad1,dsd,mass,dr3,rad_wet
+      real(8), allocatable, dimension(:) :: rad,rad1,dsd,mass,dr3,rad_wet,udrop,fv
       integer :: nbins,nbinsout,iinit,ifinal
       integer :: disp,GCCN
       integer :: iter,ntmic,ntot,i
       real*8 :: ndrop
 !      integer, parameter :: NN =64
-      real*8 :: diffvnd1,diffvnd2,ka1,ka2
+      real*8 :: diffvnd1,diffvnd2,ka1,ka2,Red
       real, parameter :: diffvnd = 2.55d-5              ! Coefficient of diffusion of water vapour in air [m**2/s]
       real, parameter :: ka = 2.48d-2                   ! Thermal conductivity of air [J/msK]
       real,parameter :: pi=3.1415
@@ -33,12 +33,14 @@
       real,parameter :: vh=2. !van hoff factor
       real,parameter :: latovercp=lat/cp
       real,parameter :: rho_ccn = 1726.d0 !kg/m**3 for ammonium sulfate =1726.d0 for NaCl=2160.d0
+      real(8), parameter :: Nsc = visc/diffvnd
+      real(8),parameter :: kwt = 1.233d8
 196   format(1x,6(f16.8,2x))
 145   format(1x,100(e16.8,2x))
 
       time_prep=0.d0
       delt= 1.d-04
-      ntot=200./delt
+      ntot=400./delt
       !setup output files
       OPEN(UNIT=16,FILE='new.out',ACCESS='APPEND')!parcel mean variables
       OPEN(UNIT=50,FILE='new.dsd',ACCESS='APPEND')!number concentration of each bin
@@ -50,6 +52,7 @@
       !disp=35 Xue10 urban, 30 Xue10 marine, 31 JN17 polluted, 32 NJ17 pristine
       nbins = 100
       allocate (dsd(nbins),rad(nbins),rad1(nbins),mass(nbins),dr3(nbins),rad_wet(nbins))
+      allocate (udrop(nbins),fv(nbins))
       rm =0.d0!1.d-5
       rad=rm
       dsd=0.d0
@@ -82,8 +85,8 @@
       qvpp= (sp+1.d0)*qvs !kg/m^3
       rhoa=pp/(Ra*(1+18.d0/29.d0*qvpp)*temp)
       rhoa0=rhoa
-      write(16,*) 0.d0-time_prep,up*delt*ntmic,Sp,cd,rad(5),rad(15),rad(40),pp,temp,281.5-grav/cp*delt*up,& !8
-                thetapp,qvpp,qvs,rm,rhoa,LATOVERCP*DELTAQP/EXNER,deltaqp
+      write(16,*) 0.d0-time_prep,up*delt*ntmic,Sp,ndrop,pp,temp,& !8
+                thetapp,qvpp,qvs,rm,rhoa,deltaqp
 !--------------first guess the radius of wet aerosol--------!
 !--------------start with r_wet=1.5*r_d-----------------------!
       rad_wet=rad1*1.5d0
@@ -149,8 +152,8 @@
           enddo
           rm=(sum(rad(1:nbinsout)**3*dsd(1:nbinsout))/ndrop)**(1.d0/3.0d0)
           if(mod(ntmic,int(time_prep/delt*2.d0)/1000) .eq. 0 .or. int(time_prep/delt*2.d0) .le. 1000) then
-             write(16,*) time,0,Sp,cd,rad(5),rad(15),rad(40),pp,temp,281.5-grav/cp*delt*up*ntmic,&
-               thetapp,qvpp,qvs,rm,rhoa,LATOVERCP*DELTAQP/EXNER,deltaqp
+             write(16,*) time,0,Sp,ndrop,pp,temp,&
+               thetapp,qvpp,qvs,rm,rhoa,deltaqp
              write(50,145) time,(dsd(i), i=1,nbinsout)
              write(51,145) time,(rad(i), i=1,nbinsout)
 	  endif
@@ -164,6 +167,18 @@
          exner = (PP/P0)**RACP         
 !         sumrp = sum(rad(1:nbinsout)*dsd(1:nbinsout))!mark old cdp
          sumrp=sum(dr3(1:nbinsout)*dsd(1:nbinsout))/3.d0
+         do i = 1,nbinsout
+             taup=kwt*rad(i)**2/grav
+             udrop(i)=taup*grav
+             Red=2.d0*rad(i)*udrop(i)/visc
+             if(Red**(1.d0/2.d0)*Nsc**(1.d0/3.d0) .lt. 1.4) then
+                 fv(i) = 1.0+0.108*(Nsc**(1.d0/3.d0)*sqrt(Red))**2
+             else
+                 fv(i) = .78 + .308*Nsc**(1.d0/3.d0)*sqrt(Red)
+             endif !ventilation effect coefficient
+         enddo
+         if(ntmic.eq.ntot) print*,fv
+         fv(i)=1.d0
 	 deltaqp=cql*sumrp!new cdp condensation
 !         print*,'cdold,new',(sum(rad(1:nbinsout)**3*dsd(1:nbinsout))*4.d0/3.d0*pi*rhow)/vol-cd,deltaqp
          cd=sum(rad(1:nbinsout)**3*dsd(1:nbinsout))*4.d0/3.d0*pi*rhow/vol!!mark
@@ -190,7 +205,7 @@
 !!--------------caculate equillibrium supersat.
 
              seq=exp(curv-solu/(rad(i)**3-rad1(i)**3))-1.d0
-             rm0=rad(i)*3.0d0*delt*ks*(sp-seq)+rad(i)**3 !!r^3 scheme    
+             rm0=rad(i)*3.0d0*delt*ks*(sp-seq)*fv(i)+rad(i)**3 !!r^3 scheme    
 
 	      if(rm0 .gt. rad1(i)**3) then
 	        dr3(i)=rm0-rad(i)**3
@@ -202,8 +217,8 @@
           enddo 
              rm=(sum(rad(1:nbinsout)**3*dsd(1:nbinsout))/ndrop)**(1.d0/3.0d0)
             if(mod(ntmic,ntot/1000) .eq. 0 .or. ntot .le. 1000) then
-              write(16,*) time,up*delt*ntmic,Sp,cd,rad(5),rad(15),rad(40),pp,temp,281.5-grav/cp*delt*up*ntmic,&
-                thetapp,qvpp,qvs,rm,rhoa,LATOVERCP*DELTAQP/EXNER,deltaqp
+              write(16,*) time,up*delt*ntmic,Sp,ndrop,pp,temp,&
+                thetapp,qvpp,qvs,rm,rhoa,deltaqp
               write(50,145) time,(dsd(i), i=1,nbinsout)
               write(51,145) time,(rad(i), i=1,nbinsout)
             endif
@@ -211,6 +226,7 @@
 
       close(unit=16)
       deallocate (dsd, rad, rad1,mass,dr3,rad_wet)
+      deallocate (udrop,fv)
       close(unit=50)
 
 
