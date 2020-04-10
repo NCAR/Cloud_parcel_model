@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -N test_QLD
+#PBS -N test_u0.5_conttrunc_undilu
 #PBS -l select=1:ncpus=1
 #PBS -l walltime=00:15:00
 #PBS -A P54048000 
@@ -22,10 +22,12 @@ export TMPDIR_WORK=/glade/u/home/sisichen/Github/parcel/QLD_newkappa
 if [ ! -f $TIMDIR_WORK ];then
 mkdir $TMPDIR_WORK
 fi
-cp cloud_parcel $TMPDIR_WORK/
-cp parameter.dat $TMPDIR_WORK/
+cp cloud_parcel $TMPDIR_WORK/cloud_parcel_u0.5conttrunc_undilu
+cp parameter.dat $TMPDIR_WORK/parameter.dat
 cd $TMPDIR_WORK
 
-time ./cloud_parcel >stdout
+time ./cloud_parcel_u0.5conttrunc_undilu >stdout_u0.5conttrunc_undilu
+
+
 
 

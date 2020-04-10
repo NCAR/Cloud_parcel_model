@@ -5,5 +5,7 @@ rm cloud_parcel QLD_test.*
 make
 #gfortran activation.F90 -o eXparcel
 #./thiseX > stdout
+if [ -f cloud_parcel ]; then
 qsub run_cheyenne 
+fi
 #./cloud_parcel >stdout &

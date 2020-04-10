@@ -23,7 +23,7 @@ SUBROUTINE wetradius(isolu,sp0)!,nrad,rad_ccn,rad_wet,kappa)
 	   seq1=seq+.01d0
 	   seq2=seq+.01d0
       if (rad_ccn(id) .le. 1.d-6) then
-      do 200 while(abs(seq-sp_c) .gt. 1.d-7 .and. seq2 .ne. seq) 
+         do 200 while(abs(seq-sp_c) .gt. 1.d-7 .and. seq2 .ne. seq) 
          seq2=seq1
          seq1=seq
          diffvnd2=diffvnd1*1.d0/(rad_wet(id)/(rad_wet(id)+0.104d-6)+diffvnd1/(rad_wet(id)*0.036)*sqrt(2.d0*pi/(Ra*temperature)))
@@ -41,10 +41,11 @@ SUBROUTINE wetradius(isolu,sp0)!,nrad,rad_ccn,rad_wet,kappa)
 	      elseif(seq .lt. sp_c) then 
 	         rad_wet(id)=rad_wet(id)+rad_ccn(id)*1.d-6
 	      endif
-200   enddo !dowhile
+200      enddo !dowhile
       else !big r
-      rad_wet(id)=2.**(1./3.)*rad_ccn(id)
+          rad_wet(id)=2.**(1./3.)*rad_ccn(id)
       endif
 
 100   enddo !drop id
+      print*,'after wetradius adjust',rad_ccn(nbinsout+nbinsout2),rad_wet(nbinsout+nbinsout2)
 end SUBROUTINE wetradius

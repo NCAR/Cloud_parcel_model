@@ -1,10 +1,10 @@
 #input variables for initial conditions in activation.F90
 filenames to output
-unseeded_u5_cont_trunc0.05
+seeded_u5_maritime_dilu10
 total time (s); spin up time
-600.d0 0.
+2000.d0 0.
 particle disperse parameter (disp); GCCN parameter; iseed flag (1=on,0=off)
-10 4 0
+11 4 1
 updraft speed (m/s)
 5.0
 initial supersaturation
@@ -36,6 +36,7 @@ Seeded number & size for disp==1 and GCCN==2
 GCCN=2 monodisperse seeding
 1: JN17 GCCN
 3: lognormal seeding particle distribution Cooper 1997 seed
+4: QLD two modes seeding case
 #iseed
 0: no artificial seeding
 1: seeding

@@ -36,10 +36,10 @@ read(80,*) gccn_ndrop,gccn_rad
      rad_ccn(1:nbinsout)=ccn_rad
      kappa(1:nbinsout)=0.3d0
    elseif (disp .eq. 10) then !QLD Jan 23 2009 continental case (see Tessendorf et al. 2012 BAMS)
-      nbinsout = 38!56
-      rmin = 5.d-8!5.d-9
+      nbinsout = 120!82 !truncated 82
+      rmin = 5.d-9!5.d-8!5.d-9 !truncated 5.d-8
       rad_ccn(1)=rmin
-      bin_factor=1.5d0
+      bin_factor=1.2d0
       !r range from 5.d-9 to 10micron
       wid(1)=rad_ccn(1)*(bin_factor**(1.d0/3.d0)-1.d0)
       do i = 2,nbinsout
@@ -70,10 +70,10 @@ read(80,*) gccn_ndrop,gccn_rad
       dNdr(1:nbinsout)=dNdlogr(1:nbinsout)/rad_ccn(1:nbinsout)
       nrad(1:nbinsout)=dNdr(1:nbinsout)*wid(1:nbinsout)
    elseif (disp .eq. 11) then !QLD Jan 26 2009 maritime case
-      nbinsout = 38!56
-      rmin = 5.d-8!5.d-9
+      nbinsout = 120!82!120 56 !truncated 82
+      rmin = 5.d-9!5.d-8!5.d-9 !truncated 5.d-8
       rad_ccn(1)=rmin
-      bin_factor=1.5d0
+      bin_factor=1.2d0
       !r range from 5.d-9 to 10micron
       wid(1)=rad_ccn(1)*(bin_factor**(1.d0/3.d0)-1.d0)
       do i = 2,nbinsout
@@ -354,14 +354,15 @@ read(80,*) gccn_ndrop,gccn_rad
          & dNdlogr(nbinsout+1:nbinsout+nbinsout2) / rad_ccn(nbinsout+1:nbinsout+nbinsout2)
       nrad(nbinsout+1:nbinsout+nbinsout2) = nrad(nbinsout+1:nbinsout+nbinsout2)+ & 
          & dNdr(nbinsout+1:nbinsout+nbinsout2) * wid(nbinsout+1:nbinsout+nbinsout2)
+      
       kappa(nbinsout+1:nbinsout+nbinsout2) = 1.2d0
 
    elseif (GCCN .eq. 4) then !QLD seeding cases (2 modes)
    !require multidisperse background aerosol SD to activate this flag; otherwise need to define rad_ccn,nbinsout.
          !size range of seeded particle r=1.5d-7 to 5d-6
-      nbinsout2=26
+      nbinsout2=60
       rmin=1.5d-7
-      bin_factor=1.5d0
+      bin_factor=1.2d0
       rad_ccn(nbinsout+1)=rmin
       wid(nbinsout+1)=rad_ccn(nbinsout+1)*(bin_factor**(1.d0/3.d0)-1.d0)
       do i = nbinsout+2,nbinsout+nbinsout2
@@ -380,9 +381,17 @@ read(80,*) gccn_ndrop,gccn_rad
          logsig=2.0d0
          logsig=log(logsig)
          dNdlogr(i)= dNdlogr(i)+n1/(sqrt(2.0d0*pi) *logsig) *exp(-((log(rad_ccn(i))-log(r1))/(sqrt(2.0d0)*logsig))**2)
+         if(rad_ccn(i) .lt. 0.4d-6) then
+            kappa(i)=.99d0 !KaCl for d<0.8micron, see Bruintjes et al 2012
+         elseif(rad_ccn(i) .ge. 0.4d-6 .and. rad_ccn(i) .lt. 0.75d-6) then
+            kappa(i)=0.74d0 ! mix b/t KaCl & CaCl2
+         elseif(rad_ccn(i) .ge. 0.75d-6) then
+            kappa(i)=.48d0
+         endif !kappa & rad_ccn
       enddo
-      dNdlogr(nbinsout+1:nbinsout+nbinsout2)=dNdlogr(nbinsout+1:nbinsout+nbinsout2)/100.d0!determine the dilution
-      kappa(nbinsout+1:nbinsout+nbinsout2) = 1.2d0
+      print*,'in iaerosol kappa=',kappa(nbinsout+1:nbinsout+nbinsout2)
+      dNdlogr(nbinsout+1:nbinsout+nbinsout2)=dNdlogr(nbinsout+1:nbinsout+nbinsout2)/10.d0!determine the dilution
+      !kappa(nbinsout+1:nbinsout+nbinsout2) = 1.2d0
       dNdr(nbinsout+1:nbinsout+nbinsout2) = dNdlogr(nbinsout+1:nbinsout+nbinsout2)/rad_ccn(nbinsout+1:nbinsout+nbinsout2)
       nrad(nbinsout+1:nbinsout+nbinsout2) = dNdr(nbinsout+1:nbinsout+nbinsout2)*wid(nbinsout+1:nbinsout+nbinsout2)
   endif!GCCN

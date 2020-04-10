@@ -37,7 +37,7 @@ program Parcel
       real,parameter :: upp=0.0 !spin-up updraft
       real :: up !updraft 
 196   format(1x,6(f16.8,2x))  
-145   format(1x,101(e16.8,2x))
+145   format(1x,201(e16.8,2x))
       !----------read parameters from file-------------------------!
       open(90,file='parameter.dat',status='unknown')
       read(90,*) 
@@ -78,8 +78,8 @@ program Parcel
 !      time_prep=.0
       delt= 1.d-04 
       ntot=time_tot/delt
-      nbins = 100
-      nbins2 = 50*iseed !seeded particle bins
+      nbins = 200
+      nbins2 = 100*iseed !seeded particle bins
       nbinsout2 =0 !actual seeded bins initialize
       allocate(nrad(nbins+nbins2),rad_ccn(nbins+nbins2),dr3(nbins+nbins2))
       allocate(rad_wet(nbins+nbins2),kappa(nbins+nbins2))
@@ -124,13 +124,13 @@ program Parcel
       write(60,*) '----------------------------------------------'
 !--------------first guess the radius of wet aerosol--------!
 !--------------start with r_wet=1.5*r_d-----------------------!
-   if (idebug .eq. 1) print*,'dry radius',rad_ccn(1:2)
+   if (idebug .eq. 1) print*,'dry radius',rad_ccn(nbinsout+nbinsout2)
    call wetradius(isolu,sp)!,nrad,rad_ccn,rad_wet,kappa)
    if (idebug .eq. 1) then
-      print*,'dry & wet radius',rad_ccn(1:2),rad_wet(1:2)
+      print*,'dry & wet radius',rad_ccn(nbinsout+nbinsout2),rad_wet(nbinsout+nbinsout2)
       print*,'nbinsout=',nbinsout,'nbinsout2=',nbinsout2
       print*,'nbins=',nbins,'nbins2=',nbins2
-      print*, 'get wet radius','radwet',rad_wet
+      !print*, 'get wet radius','radwet',rad_wet
    endif
 !--------------spin-up------------------
 if(time_prep .ne. 0) then
@@ -138,7 +138,7 @@ if(time_prep .ne. 0) then
          time = ntmic*delt/2.d0-time_prep
          pp=rhoa*Ra*(1.d0+18.d0/29.d0*qvpp)*temperature
          exner = (PP/P0)**RACP
-         sumrp=sum(dr3(1:nbinsout)*nrad(1:nbinsout))/3.d0
+         sumrp=sum(dr3(1:nbinsout+nbinsout2)*nrad(1:nbinsout+nbinsout2))/3.d0
          deltaqp=cql*sumrp!new cdp condensation
          temp_old=temperature
          temperature=temp_old-grav/cp*delt/2.0d0*upp+latovercp*deltaqp!mark new
@@ -180,9 +180,11 @@ if(time_prep .ne. 0) then
                thetapp,qvpp,qvs,rm,rhoa,LATOVERCP*DELTAQP/EXNER,deltaqp
              write(50,145) time,(nrad(i), i=1,nbinsout+nbinsout2)
              write(51,145) time,(rad_wet(i), i=1,nbinsout+nbinsout2)
+             if(idebug .eq. 1) write(60,145) time,(dr3(i), i=1,nbinsout+nbinsout2)
 	  endif
   200 enddo
 endif ! spin_up
+if(idebug .eq. 1) print*,'after spinup dry & wet radius',rad_ccn(nbinsout+nbinsout2),rad_wet(nbinsout+nbinsout2)
 lwc=sum(4.d0/3.d0*pi*rad_wet(1:nbinsout+nbinsout2)**3*rhow*nrad(1:nbinsout+nbinsout2))*1e6
 write(16,*) 0.d0-time_prep,0.d0,Sp,lwc,ndrop,pp,temperature, & !8
             thetapp,qvpp,qvs,rm,rhoa,LATOVERCP*DELTAQP/EXNER,deltaqp
@@ -205,7 +207,8 @@ print*,'evolution of droplet size starting with rm=',rm
          rm=0.d0
          diffvnd1=1.d-5*(0.015*temperature-1.9)
          ka1=1.5d-11*temperature**3-4.8d-8*temperature**2+1.d-4*temperature-3.9d-4
-          do i = 1,nbinsout+nbinsout2
+         if (idebug .eq. 1) print*,'before do loop dry & wet radius',rad_ccn(nbinsout+nbinsout2),rad_wet(nbinsout+nbinsout2)
+         do i = 1,nbinsout+nbinsout2
              curv=2.d0*sigma_sa/(Rv*rhow*temperature*rad_wet(i)) !curvature effect coefficient !in m
             if(isolu .eq. 1) then !kappa
                solu=(rad_wet(i)**3-rad_ccn(i)**3)/(rad_wet(i)**3-(1-kappa(i))*rad_ccn(i)**3)
@@ -220,7 +223,7 @@ print*,'evolution of droplet size starting with rm=',rm
 !!--------------caculate equillibrium supersat.
             seq=solu*exp(curv)-1.d0
             rm0=rad_wet(i)*3.0d0*delt*ks*(sp-seq)+rad_wet(i)**3 !!r^3 
-	         if(rm0 .gt. rad_ccn(i)**3) then
+	         if(rm0 .gt. (rad_ccn(i))**3) then
 	            dr3(i)=rm0-rad_wet(i)**3
 	            rad_wet(i)=rm0**(1.d0/3.d0)
 	         else
@@ -230,7 +233,7 @@ print*,'evolution of droplet size starting with rm=',rm
             !if (idebug .eq. 1) print*,'id',i,'rad_wet',rad_wet(i),'solu',solu,'seq',seq,'supersat=',sp-seq,'s_env',sp
           enddo 
             rm=(sum(rad_wet(1:nbinsout+nbinsout2)**3*nrad(1:nbinsout+nbinsout2))/ndrop)**(1.d0/3.0d0)
-            if(mod(ntmic,int(1./delt)) .eq. 0 .or. ntot .le. 1000) then
+            if(mod(ntmic,int(1./delt)) .eq. 0) then
                lwc=sum(4.d0/3.d0*pi*rad_wet(1:nbinsout+nbinsout2)**3*rhow*nrad(1:nbinsout+nbinsout2))*1e6
                dNdr=0.d0! initialize dNdr
                imax=1
@@ -246,18 +249,14 @@ print*,'evolution of droplet size starting with rm=',rm
                   dNdr(irad)=dNdr(irad)+nrad(i)
                enddo
                ndrop=sum(dNdr(1:imax))
-               !rm=0.d0
-               !do i=2,imax
-               !   rm=rm+(real(i)*1.d-6)**3 * dndr(i)
-               !enddo
-               !rm=(rm/sum(dndr(2:imax)))**(1.d0/3.d0)
-               !ndrop=sum(nrad(1:nbinsout+nbinsout2))
                write(52,145) time, (dNdr(i),i=1,nbins)
                write(16,*) time,up*delt*ntmic,Sp,lwc,ndrop,pp,temperature, &
                   thetapp,qvpp,qvs,rm,rhoa,LATOVERCP*DELTAQP/EXNER,deltaqp
                write(50,145) time,(nrad(i), i=1,nbinsout+nbinsout2)
                write(51,145) time,(rad_wet(i), i=1,nbinsout+nbinsout2)
                           !map rad_wet into dNdr (dr=1micron)               
+               if(idebug .eq. 1) write(60,145) time,(dr3(i), i=1,nbinsout+nbinsout2)
+               print*,time,rad_wet(nbinsout+nbinsout2),rad_ccn(nbinsout+nbinsout2),nbinsout,nbinsout2
             endif
 
   100 enddo
